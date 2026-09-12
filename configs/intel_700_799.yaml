@@ -11,7 +11,7 @@ map:
   nx: 100
   ny: 100
   auto_domain: true
-  auto_domain_margin: 5.0
+  auto_domain_margin: 15.0
 weights:
   scan: 1.0
   hallucination: 1.0
