@@ -13,7 +13,9 @@ requirements:
 
 ## Decision
 
-Ship three grid-node normal methods behind `normals.method` and compare them by ablation on the simulated dataset: `pca` (dissertation baseline: nearest scan point's kNN-PCA normal), `hybrid` (blend the PCA normal with the sign-matched vector toward the nearest scan point, weighted by the PCA eigenvalue ratio), and `weighted` (PCA normal, Eikonal weight scaled down by cornerness).
+Grid-node normals default to the `weighted` method: the nearest scan point's kNN-PCA normal, with the Eikonal residual weight scaled down by the neighborhood's cornerness (eigenvalue ratio). `pca` (dissertation baseline) and `hybrid` (blend with the sign-matched closest-point vector) stay available behind `normals.method` for comparison.
+
+Ablation on simu_76 (2026-09-12, 100 LM iterations): on clean odometry the three methods tie. With noise [0.1, 0.1, 0.01], `weighted` cuts the mean relative rotation error to 0.00017 rad versus 0.00049 (`pca`) and 0.00046 (`hybrid`), and the absolute rotation error to 0.017 rad versus 0.030/0.026, at equal translation error.
 
 ## Context
 
@@ -21,4 +23,5 @@ The dissertation traces its worst map errors to normal estimation at corners and
 
 ## Alternatives considered
 
-- Pick one method up front (considered): no evidence either way; the ablation is cheap because the method is a config switch.
+- `pca` as default (considered): dissertation baseline; loses 3x on relative rotation error under odometry noise.
+- `hybrid` closest-point blend (tried, not adopted 2026-09-12): implements the dissertation's 6.3 suggestion but does not beat `pca` on trajectory metrics; a wrong-but-confident normal still hurts, whereas down-weighting removes the damage.

@@ -16,7 +16,7 @@ Scan CornerScan(const Pose2& pose) {
   Scan scan;
   const Eigen::Matrix2d rot_inv = pose.Rotation().transpose();
   auto add_world_point = [&](const Eigen::Vector2d& world) {
-    scan.points.push_back(rot_inv * (world - pose.Translation()));
+    scan.points.emplace_back(rot_inv * (world - pose.Translation()));
   };
   for (double s = 0.25; s <= 10.0; s += 0.25) {
     add_world_point({0.0, s});
@@ -49,6 +49,9 @@ ProblemOptions MakeProblemOptions() {
   options.hallucination.points_per_scan_point = 4;
   options.hallucination.step_size = 0.2;
   options.normals.k_neighbors = 8;
+  // The dissertation-baseline method keeps the convergence bounds tight; the
+  // ablation of methods lives in configs, not in this machinery test.
+  options.normals.method = NormalMethod::kPca;
   return options;
 }
 

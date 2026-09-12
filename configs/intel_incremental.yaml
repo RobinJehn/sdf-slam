@@ -21,7 +21,7 @@ hallucination:
   points_per_scan_point: 6
   step_size: 0.1
 normals:
-  method: hybrid
+  method: weighted
   k_neighbors: 10
 solver:
   backend: lm

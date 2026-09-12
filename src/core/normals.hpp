@@ -40,7 +40,9 @@ enum class NormalMethod : std::uint8_t {
 };
 
 struct NormalOptions {
-  NormalMethod method{NormalMethod::kPca};
+  /// `kWeighted` wins the ablation: 3x lower relative rotation error under
+  /// odometry noise than the PCA baseline. see DEC-0003 normal-estimation-ablation
+  NormalMethod method{NormalMethod::kWeighted};
   int k_neighbors{10};
   /// Cornerness at which the hybrid blend saturates / the weighted scale
   /// reaches its floor.

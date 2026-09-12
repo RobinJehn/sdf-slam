@@ -29,7 +29,9 @@ comparison; `bench_solvers` measures both.
   simulated dataset run in ~9 s.
 - Optional active-region state: only observed grid nodes are optimized.
 - Three normal-estimation methods (`pca`, `hybrid`, `weighted`) for the
-  Eikonal residual, switchable per config for ablations.
+  Eikonal residual. The ablation on the noisy simulated dataset picked
+  `weighted` as the default: 3x lower relative rotation error than the PCA
+  baseline (DEC-0003).
 - Analytic bilinear map gradients (consistent with the interpolation model),
   angle-wrapped odometry residuals, Jacobians verified against finite
   differences in the test suite.
@@ -73,6 +75,15 @@ uv run plot_trajectory.py ../../out/simu_76_batch
 | Mean rotation error (rad) | 0.00095 | 0.00037 |
 | Mean rel. translation error | 0.0041 | 0.0031 |
 | Mean rel. rotation error (rad) | 0.00016 | 0.00014 |
+
+## Solver benchmark (simu_10, 5 LM iterations, M-series laptop)
+
+| Case | Time |
+| --- | --- |
+| Hand-rolled LM, dense map | 127 ms |
+| Hand-rolled LM, active region | 52 ms |
+| Ceres, dense map | 194 ms |
+| Ceres, active region | 125 ms |
 
 ## Layout
 
