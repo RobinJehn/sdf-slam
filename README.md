@@ -76,6 +76,12 @@ uv run plot_trajectory.py ../../out/simu_76_batch
 | Mean rel. translation error | 0.0041 | 0.0031 |
 | Mean rel. rotation error (rad) | 0.00016 | 0.00014 |
 
+On the full 910-scan Intel dataset the incremental run (10 LM iterations per
+new scan, active region on) finishes in 16.4 minutes on an M-series laptop
+and stays globally consistent without loop closure:
+
+![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
+
 ## Solver benchmark (simu_10, 5 LM iterations, M-series laptop)
 
 | Case | Time |
