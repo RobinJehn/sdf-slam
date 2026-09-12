@@ -1,0 +1,32 @@
+# Curated strict set: correctness and performance checks on, style checks that
+# fight numerical/math code off.
+Checks: >
+  bugprone-*,
+  clang-analyzer-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  cppcoreguidelines-*,
+  misc-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-designated-initializers,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-math-missing-parentheses,
+  -readability-function-cognitive-complexity,
+  -readability-convert-member-functions-to-static,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-avoid-do-while,
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+  -bugprone-easily-swappable-parameters,
+  -readability-redundant-member-init,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
+WarningsAsErrors: '*'
+HeaderFilterRegex: '/(src/core|src/problem|src/solvers|src/pipeline)/'
+FormatStyle: file

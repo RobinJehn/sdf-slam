@@ -1,0 +1,20 @@
+# Dissertation experiment 4.1.3: noisy odometry [0.1, 0.1, 0.01]; ground
+# truth comes from the clean dataset.
+dataset_dir: data/simu_76_noise
+ground_truth_poses: data/simu_76/scanner_info.txt
+output_dir: out/simu_76_noise
+mode: batch
+map:
+  nx: 100
+  ny: 100
+  min: [-25.0, -25.0]
+  max: [25.0, 25.0]
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+normals:
+  method: pca
+  k_neighbors: 10
+solver:
+  backend: lm
+  max_iterations: 100

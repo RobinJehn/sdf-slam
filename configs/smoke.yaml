@@ -1,0 +1,16 @@
+# Tiny fast run for CI and local smoke checks.
+dataset_dir: data/simu_10
+ground_truth_poses: data/simu_10/scanner_info.txt
+output_dir: out/smoke
+mode: batch
+map:
+  nx: 100
+  ny: 100
+  min: [-25.0, -25.0]
+  max: [25.0, 25.0]
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+solver:
+  backend: lm
+  max_iterations: 15

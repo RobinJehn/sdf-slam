@@ -1,0 +1,47 @@
+#pragma once
+
+#include <Eigen/Core>
+#include <cstdint>
+#include <filesystem>
+
+#include "problem/problem.hpp"
+#include "solvers/solver.hpp"
+
+namespace sdf_slam {
+
+enum class RunMode : std::uint8_t { kBatch, kIncremental };
+
+struct MapConfig {
+  int nx{100};
+  int ny{100};
+  /// Fixed domain bounds; ignored when auto_domain is set.
+  Eigen::Vector2d min_corner{-25.0, -25.0};
+  Eigen::Vector2d max_corner{25.0, 25.0};
+  /// Derive the domain from the data bounds plus margin.
+  bool auto_domain{false};
+  double auto_domain_margin{5.0};
+  double initial_value{0.0};
+};
+
+struct RunConfig {
+  std::filesystem::path dataset_dir;
+  /// Ground-truth poses for evaluation; empty when unavailable.
+  std::filesystem::path ground_truth_poses;
+  std::filesystem::path output_dir{"out"};
+
+  RunMode mode{RunMode::kBatch};
+  /// Incremental mode: frames appended per step (algorithm 2, increment k).
+  int increment_size{1};
+  /// Incremental mode: solver iterations per step.
+  int iterations_per_increment{10};
+
+  MapConfig map;
+  ProblemOptions problem;
+  SolverOptions solver;
+};
+
+/// Parses a YAML run configuration. Unknown keys raise, so typos in
+/// experiment configs fail loudly.
+RunConfig LoadConfig(const std::filesystem::path& path);
+
+}  // namespace sdf_slam

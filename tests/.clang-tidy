@@ -1,0 +1,5 @@
+# Extends the root config: the TEST registration macros expand to non-const
+# globals we cannot change.
+InheritParentConfig: true
+Checks: >
+  -cppcoreguidelines-avoid-non-const-global-variables

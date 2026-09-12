@@ -1,0 +1,8 @@
+# Extends the root config. The BENCHMARK registration macros expand to
+# non-const globals with throwing static initializers, and the canonical
+# `for (auto _ : state)` loop reads as a dead store to the analyzer.
+InheritParentConfig: true
+Checks: >
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -bugprone-throwing-static-initialization,
+  -clang-analyzer-deadcode.DeadStores

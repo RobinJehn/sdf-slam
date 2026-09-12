@@ -1,0 +1,29 @@
+# Dissertation experiment 4.1.1: batch optimization on the simulated dataset
+# with ground-truth odometry. Hyper-parameters follow table 4.1.
+dataset_dir: data/simu_76
+ground_truth_poses: data/simu_76/scanner_info.txt
+output_dir: out/simu_76_batch
+mode: batch
+map:
+  nx: 100
+  ny: 100
+  min: [-25.0, -25.0]
+  max: [25.0, 25.0]
+  initial_value: 0.0
+weights:
+  scan: 1.0
+  hallucination: 1.0
+  eikonal: 1.0
+  odometry: 1.0
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+  both_directions: true
+normals:
+  method: pca
+  k_neighbors: 10
+solver:
+  backend: lm
+  max_iterations: 100
+  lambda_init: 1.0
+  lambda_factor: 1.0
