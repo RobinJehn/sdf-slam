@@ -1,6 +1,8 @@
 #include <Eigen/SparseCholesky>
 #include <Eigen/SparseCore>
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -26,23 +28,29 @@ void AssemblePointRows(const Problem& problem, size_t begin, size_t end, Assembl
   const std::vector<Pose2>& poses = problem.poses();
   for (size_t s = begin; s < end; ++s) {
     const PointSpec& spec = problem.point_specs()[s];
-    const PointResidualJacobian eval = EvalPointResidual(
-        map, poses[static_cast<size_t>(spec.frame)], spec.point_sensor, spec.expected_sdf);
+    const PointResidualJacobian eval =
+        EvalPointResidual(map, poses[static_cast<size_t>(spec.frame)], spec.point_sensor,
+                          spec.expected_sdf, problem.smooth_gradient());
     const int row = static_cast<int>(s);
-    chunk.residuals.emplace_back(row, spec.sqrt_weight * eval.residual);
+    const double weighted = spec.sqrt_weight * eval.residual;
+    // IRLS: sqrt of the Huber weight scales the row so the Gauss-Newton step
+    // minimizes the robust cost around the current residual.
+    const double sw = std::sqrt(problem.HuberWeight(weighted));
+    chunk.residuals.emplace_back(row, sw * weighted);
     if (!eval.valid) {
       continue;  // Point outside the map: constant residual, no Jacobian row.
     }
+    const double scale = sw * spec.sqrt_weight;
     for (size_t k = 0; k < 4; ++k) {
       const int col = problem.NodeColumn(eval.node_ids[k]);
       if (col >= 0) {
-        chunk.triplets.emplace_back(row, col, spec.sqrt_weight * eval.d_nodes[k]);
+        chunk.triplets.emplace_back(row, col, scale * eval.d_nodes[k]);
       }
     }
     if (spec.frame >= 1) {
       const int pose_col = problem.PoseColumn(spec.frame);
       for (int k = 0; k < 3; ++k) {
-        chunk.triplets.emplace_back(row, pose_col + k, spec.sqrt_weight * eval.d_pose[k]);
+        chunk.triplets.emplace_back(row, pose_col + k, scale * eval.d_pose[k]);
       }
     }
   }
@@ -64,6 +72,7 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
 
   double lambda = options.lambda_init;
   double previous_cost = result.initial_cost;
+  double nielsen_nu = 2.0;  // growth factor for rejected steps (Nielsen 1999)
 
   const unsigned hardware = std::thread::hardware_concurrency();
   const size_t num_threads =
@@ -168,7 +177,7 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
     // Snapshot for optional revert.
     Eigen::VectorXd map_backup;
     std::vector<Pose2> pose_backup;
-    if (options.reject_worse_steps) {
+    if (options.reject_worse_steps || options.trust_region) {
       map_backup = problem.map().values();
       pose_backup = problem.poses();
     }
@@ -183,7 +192,28 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
       break;
     }
 
-    if (cost < previous_cost) {
+    if (options.trust_region) {
+      // Gain ratio: actual reduction over the reduction the linearization
+      // predicts (Madsen et al. 2004, eq. 2.20, with F = 0.5 r^T r). Cost()
+      // returns r^T r, so the 1/2 factors cancel:
+      // rho = (prev - cost) / (step^T (lambda * step + rhs)), rhs = -J^T r.
+      const double predicted = step.dot(lambda * step + rhs);
+      const double rho = predicted > 0.0 ? (previous_cost - cost) / predicted : -1.0;
+      if (rho > 0.0) {
+        previous_cost = cost;
+        const double shrink = 1.0 - std::pow(2.0 * rho - 1.0, 3);
+        // Floor keeps the normal matrix positive definite: grid nodes with no
+        // residual row have a zero J^T J diagonal and only lambda regularizes
+        // them.
+        lambda = std::max(lambda * std::max(1.0 / 3.0, shrink), 1e-7);
+        nielsen_nu = 2.0;
+      } else {
+        problem.map().values() = map_backup;
+        problem.poses() = pose_backup;
+        lambda *= nielsen_nu;
+        nielsen_nu *= 2.0;
+      }
+    } else if (cost < previous_cost) {
       lambda /= options.lambda_factor;
       previous_cost = cost;
     } else {

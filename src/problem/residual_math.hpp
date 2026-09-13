@@ -32,8 +32,33 @@ struct PointResidualJacobian {
   Eigen::Vector3d d_pose{0.0, 0.0, 0.0};
 };
 
+/// Central-difference SDF gradient, computed per node (clamped to one-sided
+/// differences at the map border) and bilinearly interpolated inside the
+/// cell. Wider stencil than the bilinear-patch gradient and continuous
+/// across cell borders, so pose steps do not jump at cell boundaries.
+/// see DEC-0007 smooth-gradient-registration
+inline Eigen::Vector2d SmoothGradient(const GridMap& map, const GridMap::CellRef& cell) {
+  const auto node_gradient = [&map](int w, int h) -> Eigen::Vector2d {
+    const int w_lo = std::max(w - 1, 0);
+    const int w_hi = std::min(w + 1, map.nx() - 1);
+    const int h_lo = std::max(h - 1, 0);
+    const int h_hi = std::min(h + 1, map.ny() - 1);
+    const double gx = (map.Value(w_hi, h) - map.Value(w_lo, h)) / ((w_hi - w_lo) * map.dx());
+    const double gy = (map.Value(w, h_hi) - map.Value(w, h_lo)) / ((h_hi - h_lo) * map.dy());
+    return {gx, gy};
+  };
+  const Eigen::Vector2d g00 = node_gradient(cell.w, cell.h);
+  const Eigen::Vector2d g10 = node_gradient(cell.w + 1, cell.h);
+  const Eigen::Vector2d g01 = node_gradient(cell.w, cell.h + 1);
+  const Eigen::Vector2d g11 = node_gradient(cell.w + 1, cell.h + 1);
+  const double a = cell.alpha;
+  const double b = cell.beta;
+  return (1.0 - a) * (1.0 - b) * g00 + a * (1.0 - b) * g10 + (1.0 - a) * b * g01 + a * b * g11;
+}
+
 inline PointResidualJacobian EvalPointResidual(const GridMap& map, const Pose2& pose,
-                                               const Eigen::Vector2d& point_sensor, double delta) {
+                                               const Eigen::Vector2d& point_sensor, double delta,
+                                               bool smooth_gradient = false) {
   PointResidualJacobian out;
   const Eigen::Vector2d point_global = pose.Apply(point_sensor);
   GridMap::CellRef cell;
@@ -46,7 +71,7 @@ inline PointResidualJacobian EvalPointResidual(const GridMap& map, const Pose2& 
   out.node_ids = cell.node_ids;
   out.d_nodes = cell.weights;
 
-  const Eigen::Vector2d grad = map.Gradient(cell);
+  const Eigen::Vector2d grad = smooth_gradient ? SmoothGradient(map, cell) : map.Gradient(cell);
   const double c = std::cos(pose.theta);
   const double s = std::sin(pose.theta);
   // d(point_global)/dtheta (eq. 3.35).

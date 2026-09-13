@@ -37,4 +37,20 @@ TEST(ScanIo, LoadsVendoredDataset) {
 }
 
 }  // namespace
+
+TEST(ScanIo, LoadsCommaSeparatedPosesWithHeader) {
+  const auto path = std::filesystem::temp_directory_path() / "sdf_slam_poses_test.csv";
+  {
+    std::ofstream file(path);
+    file << "x,y,theta\n1.5,-2.0,0.25\n3.0,4.0,-0.5\n";
+  }
+  const std::vector<Pose2> poses = LoadPoses(path);
+  std::filesystem::remove(path);
+  ASSERT_EQ(poses.size(), 2U);
+  EXPECT_DOUBLE_EQ(poses[0].x, 1.5);
+  EXPECT_DOUBLE_EQ(poses[0].y, -2.0);
+  EXPECT_DOUBLE_EQ(poses[0].theta, 0.25);
+  EXPECT_DOUBLE_EQ(poses[1].theta, -0.5);
+}
+
 }  // namespace sdf_slam

@@ -82,12 +82,19 @@ std::vector<Pose2> LoadPoses(const std::filesystem::path& path) {
   if (!file.is_open()) {
     throw std::runtime_error("cannot open pose file: " + path.string());
   }
+  // Accepts both pose formats: whitespace-separated (scanner_info.txt) and
+  // comma-separated with a header line (poses_*.csv run outputs).
   std::vector<Pose2> poses;
-  double x = 0.0;
-  double y = 0.0;
-  double theta = 0.0;
-  while (file >> x >> y >> theta) {
-    poses.push_back({x, y, theta});
+  std::string line;
+  while (std::getline(file, line)) {
+    std::ranges::replace(line, ',', ' ');
+    std::istringstream stream(line);
+    double x = 0.0;
+    double y = 0.0;
+    double theta = 0.0;
+    if (stream >> x >> y >> theta) {
+      poses.push_back({x, y, theta});
+    }
   }
   return poses;
 }

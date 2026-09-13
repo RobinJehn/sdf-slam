@@ -10,7 +10,10 @@ namespace sdf_slam {
 
 Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>& scans,
                  const std::vector<Pose2>& odometry, const ProblemOptions& options)
-    : map_(std::move(map)), poses_(std::move(poses)) {
+    : map_(std::move(map)),
+      poses_(std::move(poses)),
+      huber_delta_(options.huber_delta),
+      smooth_gradient_(options.smooth_gradient) {
   if (scans.size() != poses_.size()) {
     throw std::invalid_argument("scan count != pose count");
   }
@@ -66,7 +69,8 @@ Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>&
 
   // Eikonal residuals at every active node whose forward-difference neighbors
   // are also active (dissertation eq. 3.20; last row/column carries none).
-  const ScanNormals scan_normals = ComputeScanNormals(scans, poses_, options.normals.k_neighbors);
+  const ScanNormals scan_normals =
+      ComputeScanNormals(scans, poses_, options.normals.k_neighbors, options.normals.per_scan);
   const std::vector<NodeNormal> node_normals =
       AssignNodeNormals(map_, scan_normals, options.normals);
   const double sqrt_we = std::sqrt(options.weights.eikonal);
@@ -115,7 +119,11 @@ double Problem::Cost() const {
     const PointResidualJacobian eval = EvalPointResidual(
         map_, poses_[static_cast<size_t>(spec.frame)], spec.point_sensor, spec.expected_sdf);
     const double r = spec.sqrt_weight * eval.residual;
-    cost += r * r;
+    if (huber_delta_ > 0.0 && std::abs(r) > huber_delta_) {
+      cost += huber_delta_ * (2.0 * std::abs(r) - huber_delta_);
+    } else {
+      cost += r * r;
+    }
   }
   for (const auto& spec : eikonal_specs_) {
     const EikonalResidualJacobian eval = EvalEikonalResidual(map_, spec.w, spec.h, spec.normal);

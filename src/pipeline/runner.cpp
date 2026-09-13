@@ -173,7 +173,14 @@ SolveResult Run(const RunConfig& config) {
   std::vector<Pose2> estimated;
 
   if (config.mode == RunMode::kBatch) {
-    Problem problem(std::move(map), dataset.poses, dataset.scans, odometry, config.problem);
+    std::vector<Pose2> initial = dataset.poses;
+    if (!config.initial_poses.empty()) {
+      initial = LoadPoses(config.initial_poses);
+      if (initial.size() != dataset.scans.size()) {
+        throw std::runtime_error("initial_poses count != scan count");
+      }
+    }
+    Problem problem(std::move(map), initial, dataset.scans, odometry, config.problem);
     total = Solve(problem, config.solver);
     estimated = problem.poses();
     map = problem.map();

@@ -22,10 +22,12 @@ struct ScanNormals {
   std::vector<double> cornerness;
 };
 
-/// Estimates a normal per scan point via k-nearest-neighbor PCA over the
-/// union of all scans, transformed with the given poses.
+/// Estimates a normal per scan point via k-nearest-neighbor PCA. With
+/// per_scan false the neighborhoods span the union of all scans transformed
+/// with the given poses; with per_scan true each scan is processed alone in
+/// its sensor frame and the normals are rotated by the pose.
 ScanNormals ComputeScanNormals(const std::vector<Scan>& scans, const std::vector<Pose2>& poses,
-                               int k_neighbors);
+                               int k_neighbors, bool per_scan = false);
 
 /// How grid-node normals are derived from scan-point normals.
 /// see DEC-0003 normal-estimation-ablation
@@ -44,6 +46,11 @@ struct NormalOptions {
   /// odometry noise than the PCA baseline. see DEC-0003 normal-estimation-ablation
   NormalMethod method{NormalMethod::kWeighted};
   int k_neighbors{10};
+  /// When true, PCA neighborhoods use only points of the same scan, computed
+  /// in the sensor frame and rotated by the pose. Per-scan normals are
+  /// pose-drift-independent; global neighborhoods mix points from misaligned
+  /// frames and corrupt the normals exactly when the estimate drifts.
+  bool per_scan{false};
   /// Cornerness at which the hybrid blend saturates / the weighted scale
   /// reaches its floor.
   double corner_threshold{0.2};

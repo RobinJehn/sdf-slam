@@ -32,6 +32,12 @@ struct SolverOptions {
   /// as in Eigen's LevenbergMarquardt) instead of lambda * I. Scales the step
   /// per parameter, which matters when map values and pose angles mix.
   bool marquardt_scaling{false};
+  /// When true, lambda follows Nielsen's gain-ratio trust-region strategy:
+  /// rho = (actual cost reduction) / (reduction the linear model predicts).
+  /// Steps with rho <= 0 are reverted and lambda grows geometrically; good
+  /// steps shrink lambda smoothly. Overrides lambda_factor and
+  /// reject_worse_steps.
+  bool trust_region{false};
   int num_threads{0};  // 0 = hardware concurrency
 };
 

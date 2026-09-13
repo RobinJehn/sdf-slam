@@ -30,10 +30,75 @@ using KdTree =
 
 }  // namespace
 
+namespace {
+
+/// PCA normal + cornerness from the k nearest neighbors of point i inside
+/// `points`; the normal is oriented toward `origin`.
+void PcaNormal(const std::vector<Eigen::Vector2d>& points, const KdTree& tree, size_t i, size_t k,
+               const Eigen::Vector2d& origin, Eigen::Vector2d& normal_out, double& cornerness_out) {
+  std::vector<uint32_t> indices(k);
+  std::vector<double> distances(k);
+  const size_t found = tree.knnSearch(points[i].data(), k, indices.data(), distances.data());
+
+  Eigen::Vector2d mean = Eigen::Vector2d::Zero();
+  for (size_t j = 0; j < found; ++j) {
+    mean += points[indices[j]];
+  }
+  mean /= static_cast<double>(found);
+
+  Eigen::Matrix2d cov = Eigen::Matrix2d::Zero();
+  for (size_t j = 0; j < found; ++j) {
+    const Eigen::Vector2d d = points[indices[j]] - mean;
+    cov += d * d.transpose();
+  }
+
+  const Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(cov);
+  // Eigenvalues sorted ascending: [0] is the normal direction.
+  Eigen::Vector2d normal = solver.eigenvectors().col(0);
+  const double lambda_min = std::max(solver.eigenvalues()[0], 0.0);
+  const double lambda_max = std::max(solver.eigenvalues()[1], 1e-12);
+
+  // Orient toward the scan origin so the normal points into observed free
+  // space (appendix A.1.1.3).
+  if (normal.dot(origin - points[i]) < 0.0) {
+    normal = -normal;
+  }
+  normal_out = normal;
+  cornerness_out = lambda_min / lambda_max;
+}
+
+ScanNormals ComputePerScanNormals(const std::vector<Scan>& scans, const std::vector<Pose2>& poses,
+                                  size_t k) {
+  ScanNormals result;
+  for (size_t s = 0; s < scans.size(); ++s) {
+    const std::vector<Eigen::Vector2d>& local = scans[s].points;
+    const PointCloudAdaptor adaptor{&local};
+    const KdTree tree(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    const Eigen::Matrix2d rot = poses[s].Rotation();
+    for (size_t i = 0; i < local.size(); ++i) {
+      Eigen::Vector2d normal;
+      double cornerness = 0.0;
+      // Sensor origin is (0, 0) in the scan frame.
+      PcaNormal(local, tree, i, std::min(k, local.size()), Eigen::Vector2d::Zero(), normal,
+                cornerness);
+      result.points.push_back(poses[s].Apply(local[i]));
+      result.normals.emplace_back(rot * normal);
+      result.cornerness.push_back(cornerness);
+    }
+  }
+  return result;
+}
+
+}  // namespace
+
 ScanNormals ComputeScanNormals(const std::vector<Scan>& scans, const std::vector<Pose2>& poses,
-                               int k_neighbors) {
+                               int k_neighbors, bool per_scan) {
   if (scans.size() != poses.size()) {
     throw std::invalid_argument("scan count != pose count");
+  }
+  const size_t k = static_cast<size_t>(std::max(2, k_neighbors));
+  if (per_scan) {
+    return ComputePerScanNormals(scans, poses, k);
   }
 
   ScanNormals result;
@@ -54,38 +119,9 @@ ScanNormals ComputeScanNormals(const std::vector<Scan>& scans, const std::vector
   const PointCloudAdaptor adaptor{&result.points};
   const KdTree tree(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
 
-  const size_t k = static_cast<size_t>(std::max(2, k_neighbors));
-  std::vector<uint32_t> indices(k);
-  std::vector<double> distances(k);
   for (size_t i = 0; i < n; ++i) {
-    const size_t found =
-        tree.knnSearch(result.points[i].data(), k, indices.data(), distances.data());
-
-    Eigen::Vector2d mean = Eigen::Vector2d::Zero();
-    for (size_t j = 0; j < found; ++j) {
-      mean += result.points[indices[j]];
-    }
-    mean /= static_cast<double>(found);
-
-    Eigen::Matrix2d cov = Eigen::Matrix2d::Zero();
-    for (size_t j = 0; j < found; ++j) {
-      const Eigen::Vector2d d = result.points[indices[j]] - mean;
-      cov += d * d.transpose();
-    }
-
-    const Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(cov);
-    // Eigenvalues sorted ascending: [0] is the normal direction.
-    Eigen::Vector2d normal = solver.eigenvectors().col(0);
-    const double lambda_min = std::max(solver.eigenvalues()[0], 0.0);
-    const double lambda_max = std::max(solver.eigenvalues()[1], 1e-12);
-
-    // Orient toward the scan origin so the normal points into observed free
-    // space (appendix A.1.1.3).
-    if (normal.dot(origins[i] - result.points[i]) < 0.0) {
-      normal = -normal;
-    }
-    result.normals[i] = normal;
-    result.cornerness[i] = lambda_min / lambda_max;
+    PcaNormal(result.points, tree, i, std::min(k, n), origins[i], result.normals[i],
+              result.cornerness[i]);
   }
   return result;
 }

@@ -110,6 +110,38 @@ TEST(EndToEnd, CeresSolverRecoversPerturbedPose) {
   ExpectRecovered(problem, setup, result.initial_cost, result.final_cost);
 }
 
+TEST(EndToEnd, TrustRegionLmRecoversPerturbedPose) {
+  const E2eSetup setup = MakeSetup();
+  Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, setup.odometry,
+                  MakeProblemOptions());
+
+  SolverOptions options;
+  options.backend = SolverBackend::kLm;
+  options.trust_region = true;
+  options.max_iterations = 40;
+  const SolveResult result = Solve(problem, options);
+
+  ExpectRecovered(problem, setup, result.initial_cost, result.final_cost);
+  // The gain-ratio strategy must never keep a step that raised the cost.
+  for (size_t i = 1; i < result.cost_history.size(); ++i) {
+    EXPECT_LE(result.cost_history[i], result.cost_history[i - 1] + 1e-9);
+  }
+}
+
+TEST(EndToEnd, HuberLossStillRecoversPerturbedPose) {
+  const E2eSetup setup = MakeSetup();
+  ProblemOptions options = MakeProblemOptions();
+  options.huber_delta = 0.5;
+  Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, setup.odometry, options);
+
+  SolverOptions solver_options;
+  solver_options.backend = SolverBackend::kLm;
+  solver_options.max_iterations = 40;
+  const SolveResult result = Solve(problem, solver_options);
+
+  ExpectRecovered(problem, setup, result.initial_cost, result.final_cost);
+}
+
 TEST(EndToEnd, ActiveRegionShrinksStateAndStillConverges) {
   const E2eSetup setup = MakeSetup();
 

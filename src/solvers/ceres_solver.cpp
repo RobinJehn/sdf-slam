@@ -165,9 +165,11 @@ SolveResult SolveCeres(Problem& problem, const SolverOptions& options) {
     if (!all_active) {
       continue;
     }
+    ceres::LossFunction* loss =
+        problem.huber_delta() > 0.0 ? new ceres::HuberLoss(problem.huber_delta()) : nullptr;
     ceres_problem.AddResidualBlock(
         new PointCost(&map, cell.w, cell.h, spec.point_sensor, spec.expected_sdf, spec.sqrt_weight),
-        nullptr, nodes[0], nodes[1], nodes[2], nodes[3],
+        loss, nodes[0], nodes[1], nodes[2], nodes[3],
         pose_values[static_cast<size_t>(spec.frame)].data());
   }
 

@@ -69,11 +69,12 @@ RunMode ParseMode(const std::string& name) {
 
 RunConfig LoadConfig(const std::filesystem::path& path) {
   const YAML::Node root = YAML::LoadFile(path.string());
-  CheckKnownKeys(root,
-                 {"dataset_dir", "ground_truth_poses", "output_dir", "mode", "increment_size",
-                  "iterations_per_increment", "snapshot_every", "map", "weights", "hallucination",
-                  "normals", "active_region", "active_margin", "solver"},
-                 "root");
+  CheckKnownKeys(
+      root,
+      {"dataset_dir", "ground_truth_poses", "initial_poses", "output_dir", "mode", "increment_size",
+       "iterations_per_increment", "snapshot_every", "map", "weights", "hallucination", "normals",
+       "huber_delta", "smooth_gradient", "active_region", "active_margin", "solver"},
+      "root");
 
   RunConfig config;
   if (root["dataset_dir"]) {
@@ -84,6 +85,9 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   if (root["ground_truth_poses"]) {
     config.ground_truth_poses = root["ground_truth_poses"].as<std::string>();
   }
+  if (root["initial_poses"]) {
+    config.initial_poses = root["initial_poses"].as<std::string>();
+  }
   if (root["output_dir"]) {
     config.output_dir = root["output_dir"].as<std::string>();
   }
@@ -93,6 +97,8 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   Assign(root, "increment_size", config.increment_size);
   Assign(root, "iterations_per_increment", config.iterations_per_increment);
   Assign(root, "snapshot_every", config.snapshot_every);
+  Assign(root, "huber_delta", config.problem.huber_delta);
+  Assign(root, "smooth_gradient", config.problem.smooth_gradient);
   Assign(root, "active_region", config.problem.active_region);
   Assign(root, "active_margin", config.problem.active_margin);
 
@@ -132,18 +138,19 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   }
 
   if (const YAML::Node normals = root["normals"]) {
-    CheckKnownKeys(normals, {"method", "k_neighbors", "corner_threshold"}, "normals");
+    CheckKnownKeys(normals, {"method", "k_neighbors", "corner_threshold", "per_scan"}, "normals");
     if (normals["method"]) {
       config.problem.normals.method = ParseNormalMethod(normals["method"].as<std::string>());
     }
     Assign(normals, "k_neighbors", config.problem.normals.k_neighbors);
     Assign(normals, "corner_threshold", config.problem.normals.corner_threshold);
+    Assign(normals, "per_scan", config.problem.normals.per_scan);
   }
 
   if (const YAML::Node solver = root["solver"]) {
     CheckKnownKeys(solver,
                    {"backend", "max_iterations", "step_tolerance", "lambda_init", "lambda_factor",
-                    "reject_worse_steps", "marquardt_scaling", "num_threads"},
+                    "reject_worse_steps", "marquardt_scaling", "trust_region", "num_threads"},
                    "solver");
     if (solver["backend"]) {
       config.solver.backend = ParseBackend(solver["backend"].as<std::string>());
@@ -154,6 +161,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
     Assign(solver, "lambda_factor", config.solver.lambda_factor);
     Assign(solver, "reject_worse_steps", config.solver.reject_worse_steps);
     Assign(solver, "marquardt_scaling", config.solver.marquardt_scaling);
+    Assign(solver, "trust_region", config.solver.trust_region);
     Assign(solver, "num_threads", config.solver.num_threads);
   }
 

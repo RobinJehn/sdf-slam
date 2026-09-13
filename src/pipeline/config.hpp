@@ -27,6 +27,10 @@ struct RunConfig {
   std::filesystem::path dataset_dir;
   /// Ground-truth poses for evaluation; empty when unavailable.
   std::filesystem::path ground_truth_poses;
+  /// Batch mode: start the optimization from these poses instead of the
+  /// dataset odometry (e.g. a previous run's poses_estimated.csv for a global
+  /// polish pass). Odometry residual measurements still come from the dataset.
+  std::filesystem::path initial_poses;
   std::filesystem::path output_dir{"out"};
 
   RunMode mode{RunMode::kBatch};

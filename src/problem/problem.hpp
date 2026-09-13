@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
-#include <optional>
+#include <cmath>
 #include <vector>
 
 #include "core/grid_map.hpp"
@@ -47,6 +47,14 @@ struct ProblemOptions {
   Weights weights;
   HallucinationOptions hallucination;
   NormalOptions normals;
+  /// Huber robust loss on point residuals (scan + hallucination), applied to
+  /// the weighted residual: quadratic within +-huber_delta, linear outside,
+  /// so outlier beams (moving people, glass) cannot drag walls. 0 disables.
+  double huber_delta{0.0};
+  /// When true, the pose Jacobian of point residuals uses the
+  /// central-difference SDF gradient interpolated at the point instead of the
+  /// exact bilinear-patch gradient. Continuous across cell borders.
+  bool smooth_gradient{false};
   /// When true, only grid nodes referenced by point residuals (dilated by
   /// active_margin cells) enter the state vector; the rest stay constant.
   /// see DEC-0002 active-region-map
@@ -71,6 +79,17 @@ class Problem {
   std::vector<Pose2>& poses() { return poses_; }
 
   [[nodiscard]] const std::vector<PointSpec>& point_specs() const { return point_specs_; }
+  [[nodiscard]] double huber_delta() const { return huber_delta_; }
+  [[nodiscard]] bool smooth_gradient() const { return smooth_gradient_; }
+  /// Huber weight w(r) for a weighted point residual; sqrt(w) scales the
+  /// residual row and its Jacobian entries (IRLS). 1 when the loss is off.
+  [[nodiscard]] double HuberWeight(double weighted_residual) const {
+    if (huber_delta_ <= 0.0) {
+      return 1.0;
+    }
+    const double abs_r = std::abs(weighted_residual);
+    return abs_r <= huber_delta_ ? 1.0 : huber_delta_ / abs_r;
+  }
   [[nodiscard]] const std::vector<EikonalSpec>& eikonal_specs() const { return eikonal_specs_; }
   [[nodiscard]] const std::vector<OdomSpec>& odom_specs() const { return odom_specs_; }
 
@@ -102,6 +121,8 @@ class Problem {
  private:
   GridMap map_;
   std::vector<Pose2> poses_;
+  double huber_delta_{0.0};
+  bool smooth_gradient_{false};
   std::vector<PointSpec> point_specs_;
   std::vector<EikonalSpec> eikonal_specs_;
   std::vector<OdomSpec> odom_specs_;
