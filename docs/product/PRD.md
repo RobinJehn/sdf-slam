@@ -16,6 +16,7 @@ decisions:
 - decisions/0005-lean-dependency-stack.md
 - decisions/0006-out-of-domain-soft-barrier.md
 - decisions/0007-smooth-gradient-registration.md
+- decisions/0008-bitwise-exact-performance-work.md
 sources: []
 ---
 

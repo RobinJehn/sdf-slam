@@ -3,8 +3,10 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <nanoflann.hpp>
 #include <stdexcept>
+#include <thread>
 
 namespace sdf_slam {
 
@@ -27,6 +29,37 @@ struct PointCloudAdaptor {
 using KdTree =
     nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, PointCloudAdaptor>,
                                         PointCloudAdaptor, 2>;
+
+/// Runs fn(i) for i in [0, n) on hardware-concurrency threads. Each index
+/// writes only its own output slot, so the result does not depend on the
+/// thread count or schedule.
+void ParallelFor(size_t n, const std::function<void(size_t)>& fn) {
+  const size_t num_threads = std::min<size_t>(n, std::max(1U, std::thread::hardware_concurrency()));
+  if (num_threads <= 1) {
+    for (size_t i = 0; i < n; ++i) {
+      fn(i);
+    }
+    return;
+  }
+  const size_t chunk = (n + num_threads - 1) / num_threads;
+  std::vector<std::thread> workers;
+  workers.reserve(num_threads);
+  for (size_t t = 0; t < num_threads; ++t) {
+    const size_t begin = t * chunk;
+    const size_t end = std::min(n, begin + chunk);
+    if (begin >= end) {
+      break;
+    }
+    workers.emplace_back([begin, end, &fn] {
+      for (size_t i = begin; i < end; ++i) {
+        fn(i);
+      }
+    });
+  }
+  for (auto& worker : workers) {
+    worker.join();
+  }
+}
 
 }  // namespace
 
@@ -119,10 +152,10 @@ ScanNormals ComputeScanNormals(const std::vector<Scan>& scans, const std::vector
   const PointCloudAdaptor adaptor{&result.points};
   const KdTree tree(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
 
-  for (size_t i = 0; i < n; ++i) {
+  ParallelFor(n, [&](size_t i) {
     PcaNormal(result.points, tree, i, std::min(k, n), origins[i], result.normals[i],
               result.cornerness[i]);
-  }
+  });
   return result;
 }
 
@@ -136,7 +169,8 @@ std::vector<NodeNormal> AssignNodeNormals(const GridMap& map, const ScanNormals&
   const PointCloudAdaptor adaptor{&scan_normals.points};
   const KdTree tree(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
 
-  for (int h = 0; h < map.ny(); ++h) {
+  ParallelFor(static_cast<size_t>(map.ny()), [&](size_t row) {
+    const int h = static_cast<int>(row);
     for (int w = 0; w < map.nx(); ++w) {
       const Eigen::Vector2d node = map.NodePosition(w, h);
       uint32_t nearest = 0;
@@ -181,7 +215,7 @@ std::vector<NodeNormal> AssignNodeNormals(const GridMap& map, const ScanNormals&
       }
       node_normals[static_cast<size_t>(map.NodeId(w, h))] = out;
     }
-  }
+  });
   return node_normals;
 }
 

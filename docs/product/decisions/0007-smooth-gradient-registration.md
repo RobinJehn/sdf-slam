@@ -48,6 +48,10 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
   order under the NN and ICP-relations metrics — divergent runs make the
   NN metric's compression bias visible.
 
+- The recipe equilibrium is chaotically sensitive: a 1e-9 relative change
+  to `lambda_init` collapses the lap-1 median from 0.013 m to 0.687 m. The
+  headline numbers are knife-edge samples, and performance work on this
+  path must be bitwise-exact (DEC-0008).
 - `smooth_gradient` is on by default: on the simulated dataset with ground
   truth it halves the mean translation error (0.039 to 0.022) and matches the
   dissertation's table 4.2. The exact bilinear-patch gradient stays available

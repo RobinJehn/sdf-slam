@@ -16,6 +16,11 @@ option(SDF_SLAM_BUILD_BENCHMARKS "Build solver benchmarks" ON)
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Ceres REQUIRED)
 
+# CHOLMOD backs the optional supernodal linear solver in the LM backend.
+# SuiteSparse is already a transitive dependency through Ceres.
+find_library(CHOLMOD_LIBRARY cholmod REQUIRED)
+find_path(CHOLMOD_INCLUDE_DIR cholmod.h PATH_SUFFIXES suitesparse REQUIRED)
+
 include(FetchContent)
 
 # Fetched third-party projects declare ancient cmake_minimum_required values;
@@ -51,9 +56,10 @@ add_library(sdf_slam_core
   src/pipeline/runner.cpp
 )
 target_include_directories(sdf_slam_core PUBLIC src)
+target_include_directories(sdf_slam_core SYSTEM PRIVATE ${CHOLMOD_INCLUDE_DIR})
 target_link_libraries(sdf_slam_core
   PUBLIC Eigen3::Eigen
-  PRIVATE Ceres::ceres nanoflann::nanoflann yaml-cpp::yaml-cpp
+  PRIVATE Ceres::ceres nanoflann::nanoflann yaml-cpp::yaml-cpp ${CHOLMOD_LIBRARY}
 )
 target_compile_options(sdf_slam_core PRIVATE -Wall -Wextra -Wpedantic)
 
@@ -78,6 +84,7 @@ if(SDF_SLAM_BUILD_TESTS)
     tests/test_hallucination.cpp
     tests/test_normals.cpp
     tests/test_jacobians.cpp
+    tests/test_parallel_ldlt.cpp
     tests/test_e2e.cpp
   )
   target_link_libraries(sdf_slam_tests PRIVATE sdf_slam_core GTest::gtest_main)

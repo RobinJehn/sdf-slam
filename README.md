@@ -99,9 +99,12 @@ On the full 910-scan Intel dataset, `configs/intel_smooth_gradient.yaml`
 globally consistent without loop closure and resolves the interior rooms.
 Median revisit error (`tools/viz/revisit_consistency.py`): 0.065 m; the
 original implementation's saved artifacts score 0.378 m on the one-lap
-slice they cover, where this recipe scores 0.013 m. Runtime: 42 minutes on
+slice they cover, where this recipe scores 0.013 m. Runtime: 39 minutes on
 an M-series laptop (the recipe needs the dense state; the active-region
-config runs in 16 minutes at lower quality):
+config runs in 16 minutes at lower quality). Solver hot paths run on
+threads whose results are bitwise equal to the serial code — the recipe is
+chaotically sensitive, so optimizations must not change a single bit
+(DEC-0008):
 
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 

@@ -55,6 +55,16 @@ SolverBackend ParseBackend(const std::string& name) {
   throw std::runtime_error("unknown solver.backend '" + name + "'");
 }
 
+LinearSolver ParseLinearSolver(const std::string& name) {
+  if (name == "eigen") {
+    return LinearSolver::kEigen;
+  }
+  if (name == "cholmod") {
+    return LinearSolver::kCholmod;
+  }
+  throw std::runtime_error("unknown solver.linear_solver '" + name + "'");
+}
+
 RunMode ParseMode(const std::string& name) {
   if (name == "batch") {
     return RunMode::kBatch;
@@ -149,12 +159,16 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   }
 
   if (const YAML::Node solver = root["solver"]) {
-    CheckKnownKeys(solver,
-                   {"backend", "max_iterations", "step_tolerance", "lambda_init", "lambda_factor",
-                    "reject_worse_steps", "marquardt_scaling", "trust_region", "num_threads"},
-                   "solver");
+    CheckKnownKeys(
+        solver,
+        {"backend", "max_iterations", "step_tolerance", "lambda_init", "lambda_factor",
+         "reject_worse_steps", "marquardt_scaling", "trust_region", "num_threads", "linear_solver"},
+        "solver");
     if (solver["backend"]) {
       config.solver.backend = ParseBackend(solver["backend"].as<std::string>());
+    }
+    if (solver["linear_solver"]) {
+      config.solver.linear_solver = ParseLinearSolver(solver["linear_solver"].as<std::string>());
     }
     Assign(solver, "max_iterations", config.solver.max_iterations);
     Assign(solver, "step_tolerance", config.solver.step_tolerance);

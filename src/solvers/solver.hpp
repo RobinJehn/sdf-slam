@@ -15,6 +15,17 @@ enum class SolverBackend : std::uint8_t {
   kCeres,
 };
 
+enum class LinearSolver : std::uint8_t {
+  /// Eigen SimplicialLDLT: single-threaded, bit-reproducible with earlier
+  /// results.
+  kEigen,
+  /// CHOLMOD supernodal LLT (SuiteSparse): multithreaded BLAS kernels, much
+  /// faster on grid-sized normal matrices. The elimination ordering differs
+  /// from Eigen's, so steps differ in floating-point rounding; results are
+  /// metric-equivalent but not bit-identical to the Eigen path.
+  kCholmod,
+};
+
 struct SolverOptions {
   SolverBackend backend{SolverBackend::kLm};
   int max_iterations{100};
@@ -39,6 +50,8 @@ struct SolverOptions {
   /// reject_worse_steps.
   bool trust_region{false};
   int num_threads{0};  // 0 = hardware concurrency
+  /// Sparse factorization used for the normal equations (LM backend only).
+  LinearSolver linear_solver{LinearSolver::kEigen};
 };
 
 struct SolveResult {
