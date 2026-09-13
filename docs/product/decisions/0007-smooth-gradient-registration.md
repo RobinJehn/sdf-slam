@@ -39,6 +39,11 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
   scaled by cell area recovers most of it at 200x200 (0.117, thinner error
   tail, 0.27 m cells) but does not beat the 100x100 flagship; 100x100 with
   the recorded values stays the reference configuration.
+- The 200x200 eikonal weight is tuned out (sweep 2026-09-13): 0.005 and
+  0.02 both lose to the area-scaled 0.01 on both metrics (ICP-relations
+  median 0.277 / 0.354 vs 0.141 m; NN 0.162 / 0.180 vs 0.117). The
+  area-scaled value is a bracketed local optimum, and 200x200 still loses
+  to the 100x100 flagship — eikonal weight is not the remaining gap.
 - The recovery does not extend to 150x150 (sweep 2026-09-13,
   `smooth_gradient_step: 0.53`, 0.35 m cells): eikonal 0.009, 0.018
   (area-scaled), and 0.036 all diverge — ICP-relations median 3.1 / 2.0 /
