@@ -1,5 +1,8 @@
 # Curated strict set: correctness and performance checks on, style checks that
 # fight numerical/math code off.
+# clang-analyzer-security.ArrayBound (LLVM >= 21) reports a false positive
+# inside Eigen's SparseCompressedBase.h; analyzer diagnostics ignore
+# HeaderFilterRegex, so the check must be off here.
 Checks: >
   bugprone-*,
   clang-analyzer-*,
@@ -26,7 +29,8 @@ Checks: >
   -misc-include-cleaner,
   -bugprone-easily-swappable-parameters,
   -readability-redundant-member-init,
-  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -clang-analyzer-security.ArrayBound
 WarningsAsErrors: '*'
 HeaderFilterRegex: '/(src/core|src/problem|src/solvers|src/pipeline)/'
 FormatStyle: file

@@ -58,13 +58,28 @@ make bench          # LM vs Ceres solver benchmark
 ./build/run_slam configs/intel_incremental.yaml # experiment 4.2.3 (slow)
 ```
 
-Outputs land in `out/<run>/`: `poses_*.csv`, `map.txt`, `metrics.json`.
+Outputs land in `out/<run>/`: `poses_*.csv`, `map.txt`,
+`scan_points_global.csv`, `metrics.json`.
 Figures:
 
 ```sh
 cd tools/viz
 uv run plot_map.py ../../out/simu_76_batch
 uv run plot_trajectory.py ../../out/simu_76_batch
+```
+
+`plot_map.py` renders the map's bilinear surface at 8 samples per grid cell
+(`--upsample`) and overlays the scan points in black. The smooth rendering
+evaluates the same interpolant the optimizer uses; the model's spatial
+resolution stays capped by the node spacing.
+
+Incremental runs with `snapshot_every: N` write per-increment map and pose
+snapshots to `out/<run>/snapshots/`. `make_video.py` animates them (needs
+ffmpeg):
+
+```sh
+cd tools/viz
+uv run make_video.py ../../out/intel_fixed_domain --dataset ../../data/intel
 ```
 
 ## Results (simu_76, ground-truth odometry)
@@ -78,7 +93,14 @@ uv run plot_trajectory.py ../../out/simu_76_batch
 
 On the full 910-scan Intel dataset the incremental run (10 LM iterations per
 new scan, active region on) finishes in 16.4 minutes on an M-series laptop
-and stays globally consistent without loop closure:
+and stays globally consistent without loop closure. The reconstruction spans
+37 x 43 m against the dissertation's ~40 x 35 m (fig. 4.18): the map is
+stretched ~20% along the corridor loop, the failure mode the dissertation
+names in fig. 4.17d. A 12-variant parameter campaign (normals method and k,
+solver damping and step rejection, eikonal weight, odometry weight,
+hallucination density, grid resolution, active margin, increment size,
+iteration count, Ceres backend) found no setting that beats this config;
+the stretch needs a structural fix, not tuning:
 
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 

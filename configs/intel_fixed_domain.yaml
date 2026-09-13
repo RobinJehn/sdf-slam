@@ -1,0 +1,33 @@
+# Full Intel dataset with a fixed map domain fitted to the optimized
+# trajectory (see configs/intel_incremental.yaml for the auto-domain
+# variant and the drift analysis). Same node count over a ~53x53 m domain
+# gives ~0.53 m cells. Snapshots feed tools/viz/make_video.py.
+dataset_dir: data/intel
+output_dir: out/intel_fixed_domain
+mode: incremental
+increment_size: 1
+iterations_per_increment: 10
+snapshot_every: 1
+active_region: true
+active_margin: 2
+map:
+  nx: 100
+  ny: 100
+  auto_domain: false
+  min: [-15.0, -28.0]
+  max: [38.0, 25.0]
+weights:
+  scan: 1.0
+  hallucination: 1.0
+  eikonal: 0.2
+  odometry: 1.0
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+normals:
+  method: weighted
+  k_neighbors: 10
+solver:
+  backend: lm
+  lambda_init: 1.0
+  lambda_factor: 1.0

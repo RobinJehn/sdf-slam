@@ -10,6 +10,11 @@ active_margin: 2
 map:
   nx: 100
   ny: 100
+  # auto_domain derives the bounds from the odometry-transformed scan points.
+  # Intel odometry drifts ~40 m, so the domain grows to ~96x109 m (~1 m cells)
+  # while the optimized trajectory covers only ~45x40 m in its top-right
+  # corner. For a tighter map at the same node count, set auto_domain: false
+  # with min: [-15.0, -28.0] and max: [38.0, 25.0].
   auto_domain: true
   auto_domain_margin: 15.0
 weights:
