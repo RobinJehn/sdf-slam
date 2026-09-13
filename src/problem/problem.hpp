@@ -57,6 +57,11 @@ struct ProblemOptions {
   /// the ground-truth trajectory error on the simulated dataset and is part
   /// of the Intel recipe. see DEC-0007 smooth-gradient-registration
   bool smooth_gradient{true};
+  /// Half-width in meters of the smooth-gradient finite-difference stencil.
+  /// 0 keeps the node-based stencil (one cell wide), which ties the smoothing
+  /// to the grid resolution; a fixed value in meters makes registration
+  /// behave the same across grid resolutions.
+  double smooth_gradient_step{0.0};
   /// When true, only grid nodes referenced by point residuals (dilated by
   /// active_margin cells) enter the state vector; the rest stay constant.
   /// see DEC-0002 active-region-map
@@ -83,6 +88,7 @@ class Problem {
   [[nodiscard]] const std::vector<PointSpec>& point_specs() const { return point_specs_; }
   [[nodiscard]] double huber_delta() const { return huber_delta_; }
   [[nodiscard]] bool smooth_gradient() const { return smooth_gradient_; }
+  [[nodiscard]] double smooth_gradient_step() const { return smooth_gradient_step_; }
   /// Huber weight w(r) for a weighted point residual; sqrt(w) scales the
   /// residual row and its Jacobian entries (IRLS). 1 when the loss is off.
   [[nodiscard]] double HuberWeight(double weighted_residual) const {
@@ -125,6 +131,7 @@ class Problem {
   std::vector<Pose2> poses_;
   double huber_delta_{0.0};
   bool smooth_gradient_{false};
+  double smooth_gradient_step_{0.0};
   std::vector<PointSpec> point_specs_;
   std::vector<EikonalSpec> eikonal_specs_;
   std::vector<OdomSpec> odom_specs_;

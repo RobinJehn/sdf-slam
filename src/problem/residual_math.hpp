@@ -56,9 +56,26 @@ inline Eigen::Vector2d SmoothGradient(const GridMap& map, const GridMap::CellRef
   return (1.0 - a) * (1.0 - b) * g00 + a * (1.0 - b) * g10 + (1.0 - a) * b * g01 + a * b * g11;
 }
 
+/// Central finite difference of the interpolated SDF over a fixed step in
+/// meters, clamped at the map border. Unlike the node-based stencil the
+/// smoothing width does not change with the grid resolution.
+/// see DEC-0007 smooth-gradient-registration
+inline Eigen::Vector2d SmoothGradientMeters(const GridMap& map, const Eigen::Vector2d& p,
+                                            double step) {
+  GridMap::CellRef cell;
+  const auto value = [&map, &cell](double x, double y) {
+    map.LocateClamped({x, y}, cell);
+    return map.Interpolate(cell);
+  };
+  const double gx = (value(p.x() + step, p.y()) - value(p.x() - step, p.y())) / (2.0 * step);
+  const double gy = (value(p.x(), p.y() + step) - value(p.x(), p.y() - step)) / (2.0 * step);
+  return {gx, gy};
+}
+
 inline PointResidualJacobian EvalPointResidual(const GridMap& map, const Pose2& pose,
                                                const Eigen::Vector2d& point_sensor, double delta,
-                                               bool smooth_gradient = false) {
+                                               bool smooth_gradient = false,
+                                               double smooth_gradient_step = 0.0) {
   PointResidualJacobian out;
   const Eigen::Vector2d point_global = pose.Apply(point_sensor);
   GridMap::CellRef cell;
@@ -71,7 +88,14 @@ inline PointResidualJacobian EvalPointResidual(const GridMap& map, const Pose2& 
   out.node_ids = cell.node_ids;
   out.d_nodes = cell.weights;
 
-  const Eigen::Vector2d grad = smooth_gradient ? SmoothGradient(map, cell) : map.Gradient(cell);
+  Eigen::Vector2d grad;
+  if (smooth_gradient && smooth_gradient_step > 0.0) {
+    grad = SmoothGradientMeters(map, point_global, smooth_gradient_step);
+  } else if (smooth_gradient) {
+    grad = SmoothGradient(map, cell);
+  } else {
+    grad = map.Gradient(cell);
+  }
   const double c = std::cos(pose.theta);
   const double s = std::sin(pose.theta);
   // d(point_global)/dtheta (eq. 3.35).

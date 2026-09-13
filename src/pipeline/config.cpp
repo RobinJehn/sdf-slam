@@ -69,12 +69,12 @@ RunMode ParseMode(const std::string& name) {
 
 RunConfig LoadConfig(const std::filesystem::path& path) {
   const YAML::Node root = YAML::LoadFile(path.string());
-  CheckKnownKeys(
-      root,
-      {"dataset_dir", "ground_truth_poses", "initial_poses", "output_dir", "mode", "increment_size",
-       "iterations_per_increment", "snapshot_every", "map", "weights", "hallucination", "normals",
-       "huber_delta", "smooth_gradient", "active_region", "active_margin", "solver"},
-      "root");
+  CheckKnownKeys(root,
+                 {"dataset_dir", "ground_truth_poses", "initial_poses", "output_dir", "mode",
+                  "increment_size", "iterations_per_increment", "snapshot_every", "map", "weights",
+                  "hallucination", "normals", "huber_delta", "smooth_gradient",
+                  "smooth_gradient_step", "active_region", "active_margin", "solver"},
+                 "root");
 
   RunConfig config;
   if (root["dataset_dir"]) {
@@ -99,6 +99,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   Assign(root, "snapshot_every", config.snapshot_every);
   Assign(root, "huber_delta", config.problem.huber_delta);
   Assign(root, "smooth_gradient", config.problem.smooth_gradient);
+  Assign(root, "smooth_gradient_step", config.problem.smooth_gradient_step);
   Assign(root, "active_region", config.problem.active_region);
   Assign(root, "active_margin", config.problem.active_margin);
 

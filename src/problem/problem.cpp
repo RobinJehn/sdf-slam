@@ -13,7 +13,8 @@ Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>&
     : map_(std::move(map)),
       poses_(std::move(poses)),
       huber_delta_(options.huber_delta),
-      smooth_gradient_(options.smooth_gradient) {
+      smooth_gradient_(options.smooth_gradient),
+      smooth_gradient_step_(options.smooth_gradient_step) {
   if (scans.size() != poses_.size()) {
     throw std::invalid_argument("scan count != pose count");
   }

@@ -34,6 +34,12 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 
 ## Consequences
 
+- The recipe is resolution-sensitive as recorded: naive 200x200 fails
+  (0.670 vs 0.065). `smooth_gradient_step` (meters) plus an eikonal weight
+  scaled by cell area recovers most of it at 200x200 (0.117, thinner error
+  tail, 0.27 m cells) but does not beat the 100x100 flagship; 100x100 with
+  the recorded values stays the reference configuration.
+
 - `smooth_gradient` is on by default: on the simulated dataset with ground
   truth it halves the mean translation error (0.039 to 0.022) and matches the
   dissertation's table 4.2. The exact bilinear-patch gradient stays available

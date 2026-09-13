@@ -28,9 +28,9 @@ void AssemblePointRows(const Problem& problem, size_t begin, size_t end, Assembl
   const std::vector<Pose2>& poses = problem.poses();
   for (size_t s = begin; s < end; ++s) {
     const PointSpec& spec = problem.point_specs()[s];
-    const PointResidualJacobian eval =
-        EvalPointResidual(map, poses[static_cast<size_t>(spec.frame)], spec.point_sensor,
-                          spec.expected_sdf, problem.smooth_gradient());
+    const PointResidualJacobian eval = EvalPointResidual(
+        map, poses[static_cast<size_t>(spec.frame)], spec.point_sensor, spec.expected_sdf,
+        problem.smooth_gradient(), problem.smooth_gradient_step());
     const int row = static_cast<int>(s);
     const double weighted = spec.sqrt_weight * eval.residual;
     // IRLS: sqrt of the Huber weight scales the row so the Gauss-Newton step
