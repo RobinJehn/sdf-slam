@@ -47,6 +47,12 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 - Huber loss and the trust-region mode also fail ON TOP of the recipe
   (lap-1: 0.69 / 0.56 vs 0.013), so the negative results hold in both
   directions for those two.
+- The odometry weight stays at 1.0 (sweep 2026-09-13). The term is
+  load-bearing: weight 0 and weight 2 both diverge on lap-1 (0.822 /
+  0.906 vs 0.013). Weight 0.5 wins on lap-1 (0.012, p90 0.068) but
+  diverges on the full dataset (0.411 vs 0.065 NN; 3.1 m vs 0.057 m
+  median ICP-relations error; ghosted map) — another case where the
+  lap-1 slice does not proxy the full box.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
