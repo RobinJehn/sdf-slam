@@ -86,10 +86,13 @@ uv run make_video.py ../../out/intel_fixed_domain --dataset ../../data/intel
 
 | Metric | This repo | Dissertation (table 4.2) |
 | --- | --- | --- |
-| Mean translation error | 0.039 | 0.022 |
-| Mean rotation error (rad) | 0.00095 | 0.00037 |
-| Mean rel. translation error | 0.0041 | 0.0031 |
-| Mean rel. rotation error (rad) | 0.00016 | 0.00014 |
+| Mean translation error | 0.022 | 0.022 |
+| Mean rotation error (rad) | 0.00033 | 0.00037 |
+| Mean rel. translation error | 0.0034 | 0.0031 |
+| Mean rel. rotation error (rad) | 0.00015 | 0.00014 |
+
+The smooth-gradient pose Jacobian (DEC-0007, on by default) closes the
+earlier gap to the dissertation's numbers.
 
 On the full 910-scan Intel dataset, `configs/intel_smooth_gradient.yaml`
 (10 LM iterations per new scan, smooth-gradient recipe, DEC-0007) stays

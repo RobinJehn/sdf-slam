@@ -34,6 +34,14 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 
 ## Consequences
 
+- `smooth_gradient` is on by default: on the simulated dataset with ground
+  truth it halves the mean translation error (0.039 to 0.022) and matches the
+  dissertation's table 4.2. The exact bilinear-patch gradient stays available
+  as `smooth_gradient: false`.
+- Huber loss and the trust-region mode also fail ON TOP of the recipe
+  (lap-1: 0.69 / 0.56 vs 0.013), so the negative results hold in both
+  directions for those two.
+
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
 - DEC-0003's `weighted` normals stay the default for the simulated datasets; the Intel configs override to `pca`.

@@ -53,8 +53,10 @@ struct ProblemOptions {
   double huber_delta{0.0};
   /// When true, the pose Jacobian of point residuals uses the
   /// central-difference SDF gradient interpolated at the point instead of the
-  /// exact bilinear-patch gradient. Continuous across cell borders.
-  bool smooth_gradient{false};
+  /// exact bilinear-patch gradient. Continuous across cell borders; halves
+  /// the ground-truth trajectory error on the simulated dataset and is part
+  /// of the Intel recipe. see DEC-0007 smooth-gradient-registration
+  bool smooth_gradient{true};
   /// When true, only grid nodes referenced by point residuals (dilated by
   /// active_margin cells) enter the state vector; the rest stay constant.
   /// see DEC-0002 active-region-map
