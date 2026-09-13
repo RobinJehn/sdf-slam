@@ -26,6 +26,30 @@ def load_poses(path: Path):
     return np.loadtxt(path, delimiter=",", skiprows=1)
 
 
+def upsample_bilinear(values: np.ndarray, factor: int) -> np.ndarray:
+    """Evaluate the map's bilinear surface (dissertation eq. 3.7) on a raster
+    with `factor` samples per cell. The map model is piecewise bilinear between
+    nodes, so this renders the true model surface; accuracy stays capped by the
+    node spacing."""
+    ny, nx = values.shape
+    fx = np.linspace(0.0, nx - 1, (nx - 1) * factor + 1)
+    fy = np.linspace(0.0, ny - 1, (ny - 1) * factor + 1)
+    w = np.clip(fx.astype(int), 0, nx - 2)
+    h = np.clip(fy.astype(int), 0, ny - 2)
+    alpha = (fx - w)[None, :]
+    beta = (fy - h)[:, None]
+    v00 = values[np.ix_(h, w)]
+    v10 = values[np.ix_(h, w + 1)]
+    v01 = values[np.ix_(h + 1, w)]
+    v11 = values[np.ix_(h + 1, w + 1)]
+    return (
+        v00 * (1 - alpha) * (1 - beta)
+        + v10 * alpha * (1 - beta)
+        + v01 * (1 - alpha) * beta
+        + v11 * alpha * beta
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dir", type=Path)
@@ -38,14 +62,26 @@ def main() -> None:
     )
     parser.add_argument("--zoom-pad", type=float, default=2.0, help="padding around the zoom box")
     parser.add_argument("--dpi", type=int, default=200)
+    parser.add_argument(
+        "--upsample",
+        type=int,
+        default=8,
+        help="bilinear samples per grid cell; 1 shows raw node values",
+    )
+    parser.add_argument(
+        "--no-scans",
+        action="store_true",
+        help="do not overlay scan points even when scan_points_global.csv exists",
+    )
     args = parser.parse_args()
 
     values, extent = load_map(args.run_dir / "map.txt")
     poses = load_poses(args.run_dir / "poses_estimated.csv")
+    rendered = upsample_bilinear(values, args.upsample) if args.upsample > 1 else values
 
     fig, ax = plt.subplots(figsize=(10, 9))
     image = ax.imshow(
-        values,
+        rendered,
         origin="lower",
         extent=extent,
         cmap="magma",
@@ -53,10 +89,27 @@ def main() -> None:
         vmax=args.vlim,
     )
     ax.plot(poses[:, 0], poses[:, 1], ".-", color="tab:green", markersize=3, label="estimated path")
+
+    scan_points_path = args.run_dir / "scan_points_global.csv"
+    if scan_points_path.exists() and not args.no_scans:
+        scan_points = np.loadtxt(scan_points_path, delimiter=",", skiprows=1)
+        ax.scatter(
+            scan_points[:, 0],
+            scan_points[:, 1],
+            s=0.5,
+            c="black",
+            marker=".",
+            linewidths=0,
+            rasterized=True,
+            label="scan points",
+        )
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title("Estimated SDF map")
-    ax.legend()
+    legend = ax.legend()
+    for handle in legend.legend_handles:
+        if hasattr(handle, "set_sizes"):
+            handle.set_sizes([30.0])
     fig.colorbar(image, ax=ax, label="signed distance")
 
     if args.zoom:
@@ -75,8 +128,10 @@ def main() -> None:
             dy = (y1 - y0) / (ny - 1)
             xs = np.concatenate([x0 + cols * dx, poses[:, 0]])
             ys = np.concatenate([y0 + rows * dy, poses[:, 1]])
-            ax.set_xlim(xs.min() - args.zoom_pad, xs.max() + args.zoom_pad)
-            ax.set_ylim(ys.min() - args.zoom_pad, ys.max() + args.zoom_pad)
+            # Clamp to the map extent so the crop never shows blank canvas
+            # beyond the domain.
+            ax.set_xlim(max(xs.min() - args.zoom_pad, x0), min(xs.max() + args.zoom_pad, x1))
+            ax.set_ylim(max(ys.min() - args.zoom_pad, y0), min(ys.max() + args.zoom_pad, y1))
 
     if args.save:
         fig.savefig(args.save, dpi=args.dpi, bbox_inches="tight")

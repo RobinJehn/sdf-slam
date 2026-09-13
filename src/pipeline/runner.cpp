@@ -4,6 +4,8 @@
 #include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -61,6 +63,43 @@ void WriteMap(const std::filesystem::path& path, const GridMap& map) {
     for (int w = 0; w < map.nx(); ++w) {
       file << map.Value(w, h) << (w + 1 < map.nx() ? " " : "\n");
     }
+  }
+}
+
+/// Writes every scan point in the global frame, one row per point, so plots
+/// can overlay the scans on the map without access to the dataset.
+void WriteGlobalScanPoints(const std::filesystem::path& path, const std::vector<Scan>& scans,
+                           const std::vector<Pose2>& poses) {
+  std::ofstream file(path);
+  file << std::setprecision(9) << "x,y\n";
+  for (size_t i = 0; i < scans.size(); ++i) {
+    for (const auto& p : scans[i].points) {
+      const Eigen::Vector2d global = poses[i].Apply(p);
+      file << global.x() << "," << global.y() << "\n";
+    }
+  }
+}
+
+/// Scan points outside the map domain evaluate the SDF as 0 with no gradient,
+/// so a large out-of-domain fraction weakens the optimization. Warn loudly.
+void WarnIfPointsOutsideMap(const GridMap& map, const std::vector<Scan>& scans,
+                            const std::vector<Pose2>& poses) {
+  size_t outside = 0;
+  size_t total = 0;
+  GridMap::CellRef cell;
+  for (size_t i = 0; i < scans.size(); ++i) {
+    for (const auto& p : scans[i].points) {
+      if (!map.Locate(poses[i].Apply(p), cell)) {
+        ++outside;
+      }
+      ++total;
+    }
+  }
+  if (outside > 0) {
+    std::cerr << "WARNING: " << outside << " of " << total << " scan points ("
+              << 100.0 * static_cast<double>(outside) / static_cast<double>(total)
+              << "%) fall outside the map domain and are unanchored (SDF 0, no gradient). "
+                 "Widen the map domain or disable auto_domain with explicit corners.\n";
   }
 }
 
@@ -147,6 +186,12 @@ SolveResult Run(const RunConfig& config) {
     step_options.max_iterations = config.iterations_per_increment;
     total.initial_cost = -1.0;
 
+    const std::filesystem::path snapshot_dir = config.output_dir / "snapshots";
+    if (config.snapshot_every > 0) {
+      std::filesystem::create_directories(snapshot_dir);
+    }
+    size_t increment = 0;
+
     size_t next_frame = 1;
     while (next_frame < dataset.scans.size()) {
       const size_t last =
@@ -174,6 +219,18 @@ SolveResult Run(const RunConfig& config) {
       total.converged = step.converged;
       total.cost_history.insert(total.cost_history.end(), step.cost_history.begin(),
                                 step.cost_history.end());
+
+      ++increment;
+      if (config.snapshot_every > 0 &&
+          (increment % static_cast<size_t>(config.snapshot_every) == 0 ||
+           next_frame == dataset.scans.size())) {
+        // File names carry the number of frames in the snapshot so the
+        // animation can pair each map with its poses.
+        std::ostringstream tag;
+        tag << std::setw(6) << std::setfill('0') << next_frame;
+        WriteMap(snapshot_dir / ("map_" + tag.str() + ".txt"), map);
+        WritePoses(snapshot_dir / ("poses_" + tag.str() + ".csv"), estimated);
+      }
     }
   }
 
@@ -181,6 +238,8 @@ SolveResult Run(const RunConfig& config) {
   WritePoses(config.output_dir / "poses_odometry.csv", dataset.poses);
   WritePoses(config.output_dir / "poses_estimated.csv", estimated);
   WriteMap(config.output_dir / "map.txt", map);
+  WriteGlobalScanPoints(config.output_dir / "scan_points_global.csv", dataset.scans, estimated);
+  WarnIfPointsOutsideMap(map, dataset.scans, estimated);
 
   if (!config.ground_truth_poses.empty()) {
     const std::vector<Pose2> ground_truth = LoadPoses(config.ground_truth_poses);
