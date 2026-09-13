@@ -34,6 +34,9 @@ struct RunConfig {
   int increment_size{1};
   /// Incremental mode: solver iterations per step.
   int iterations_per_increment{10};
+  /// Incremental mode: write map + poses to output_dir/snapshots every N
+  /// increments so tools can animate the run. 0 disables snapshots.
+  int snapshot_every{0};
 
   MapConfig map;
   ProblemOptions problem;

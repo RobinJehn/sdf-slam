@@ -114,10 +114,8 @@ double Problem::Cost() const {
   for (const auto& spec : point_specs_) {
     const PointResidualJacobian eval = EvalPointResidual(
         map_, poses_[static_cast<size_t>(spec.frame)], spec.point_sensor, spec.expected_sdf);
-    if (eval.valid) {
-      const double r = spec.sqrt_weight * eval.residual;
-      cost += r * r;
-    }
+    const double r = spec.sqrt_weight * eval.residual;
+    cost += r * r;
   }
   for (const auto& spec : eikonal_specs_) {
     const EikonalResidualJacobian eval = EvalEikonalResidual(map_, spec.w, spec.h, spec.normal);

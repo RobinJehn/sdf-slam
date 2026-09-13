@@ -71,8 +71,8 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   const YAML::Node root = YAML::LoadFile(path.string());
   CheckKnownKeys(root,
                  {"dataset_dir", "ground_truth_poses", "output_dir", "mode", "increment_size",
-                  "iterations_per_increment", "map", "weights", "hallucination", "normals",
-                  "active_region", "active_margin", "solver"},
+                  "iterations_per_increment", "snapshot_every", "map", "weights", "hallucination",
+                  "normals", "active_region", "active_margin", "solver"},
                  "root");
 
   RunConfig config;
@@ -92,6 +92,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   }
   Assign(root, "increment_size", config.increment_size);
   Assign(root, "iterations_per_increment", config.iterations_per_increment);
+  Assign(root, "snapshot_every", config.snapshot_every);
   Assign(root, "active_region", config.problem.active_region);
   Assign(root, "active_margin", config.problem.active_margin);
 
@@ -142,7 +143,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   if (const YAML::Node solver = root["solver"]) {
     CheckKnownKeys(solver,
                    {"backend", "max_iterations", "step_tolerance", "lambda_init", "lambda_factor",
-                    "reject_worse_steps", "num_threads"},
+                    "reject_worse_steps", "marquardt_scaling", "num_threads"},
                    "solver");
     if (solver["backend"]) {
       config.solver.backend = ParseBackend(solver["backend"].as<std::string>());
@@ -152,6 +153,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
     Assign(solver, "lambda_init", config.solver.lambda_init);
     Assign(solver, "lambda_factor", config.solver.lambda_factor);
     Assign(solver, "reject_worse_steps", config.solver.reject_worse_steps);
+    Assign(solver, "marquardt_scaling", config.solver.marquardt_scaling);
     Assign(solver, "num_threads", config.solver.num_threads);
   }
 

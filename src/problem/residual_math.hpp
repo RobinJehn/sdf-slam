@@ -16,6 +16,14 @@ namespace sdf_slam {
 /// Residual r = D(T p) - delta for a scan point (delta = 0) or a hallucinated
 /// point (delta = expected SDF). Jacobian entries cover the four cell nodes
 /// and the pose (tx, ty, theta).
+///
+/// Outside the map domain the SDF evaluates to 0 with zero gradient, so the
+/// residual -delta stays in the objective as a constant penalty. Hallucinated
+/// points (delta != 0) then act as a soft barrier: a step that pushes points
+/// off the map raises the cost instead of deleting their residuals, which
+/// would reward the escape. `valid` is false in that case: the residual
+/// carries no Jacobian entries.
+/// see DEC-0006 out-of-domain-soft-barrier
 struct PointResidualJacobian {
   bool valid{false};
   double residual{0.0};
@@ -30,6 +38,7 @@ inline PointResidualJacobian EvalPointResidual(const GridMap& map, const Pose2& 
   const Eigen::Vector2d point_global = pose.Apply(point_sensor);
   GridMap::CellRef cell;
   if (!map.Locate(point_global, cell)) {
+    out.residual = -delta;
     return out;
   }
   out.valid = true;

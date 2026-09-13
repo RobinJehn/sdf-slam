@@ -28,11 +28,11 @@ void AssemblePointRows(const Problem& problem, size_t begin, size_t end, Assembl
     const PointSpec& spec = problem.point_specs()[s];
     const PointResidualJacobian eval = EvalPointResidual(
         map, poses[static_cast<size_t>(spec.frame)], spec.point_sensor, spec.expected_sdf);
-    if (!eval.valid) {
-      continue;  // Point outside the map this iteration: zero row.
-    }
     const int row = static_cast<int>(s);
     chunk.residuals.emplace_back(row, spec.sqrt_weight * eval.residual);
+    if (!eval.valid) {
+      continue;  // Point outside the map: constant residual, no Jacobian row.
+    }
     for (size_t k = 0; k < 4; ++k) {
       const int col = problem.NodeColumn(eval.node_ids[k]);
       if (col >= 0) {
@@ -148,7 +148,14 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
     // a sparse Cholesky factorization (section 3.3.5).
     Eigen::SparseMatrix<double> normal_matrix = jacobian.transpose() * jacobian;
     for (int d = 0; d < num_params; ++d) {
-      normal_matrix.coeffRef(d, d) += lambda;
+      if (options.marquardt_scaling) {
+        // Guard against zero diagonal entries (parameters with no residual
+        // this iteration) so the system stays positive definite.
+        const double diag = std::max(normal_matrix.coeff(d, d), 1e-12);
+        normal_matrix.coeffRef(d, d) += lambda * diag;
+      } else {
+        normal_matrix.coeffRef(d, d) += lambda;
+      }
     }
     const Eigen::VectorXd rhs = -jacobian.transpose() * residuals;
 

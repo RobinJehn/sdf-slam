@@ -28,6 +28,10 @@ struct SolverOptions {
   /// When true, a step that increases the cost is reverted (classic LM).
   /// Algorithm 1 never reverts, so the default follows the dissertation.
   bool reject_worse_steps{false};
+  /// When true, the damping term is lambda * diag(J^T J) (Marquardt scaling,
+  /// as in Eigen's LevenbergMarquardt) instead of lambda * I. Scales the step
+  /// per parameter, which matters when map values and pose angles mix.
+  bool marquardt_scaling{false};
   int num_threads{0};  // 0 = hardware concurrency
 };
 

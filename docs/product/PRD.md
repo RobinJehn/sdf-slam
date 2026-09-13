@@ -5,7 +5,7 @@ type: product
 status: draft
 owner: Robin Jehn
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-13
 supersedes: null
 superseded_by: null
 decisions:
@@ -14,6 +14,7 @@ decisions:
 - decisions/0003-normal-estimation-ablation.md
 - decisions/0004-ceres-frozen-cells.md
 - decisions/0005-lean-dependency-stack.md
+- decisions/0006-out-of-domain-soft-barrier.md
 sources: []
 ---
 
