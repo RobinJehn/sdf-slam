@@ -91,16 +91,14 @@ uv run make_video.py ../../out/intel_fixed_domain --dataset ../../data/intel
 | Mean rel. translation error | 0.0041 | 0.0031 |
 | Mean rel. rotation error (rad) | 0.00016 | 0.00014 |
 
-On the full 910-scan Intel dataset the incremental run (10 LM iterations per
-new scan, active region on) finishes in 16.4 minutes on an M-series laptop
-and stays globally consistent without loop closure. The reconstruction spans
-37 x 43 m against the dissertation's ~40 x 35 m (fig. 4.18): the map is
-stretched ~20% along the corridor loop, the failure mode the dissertation
-names in fig. 4.17d. A 12-variant parameter campaign (normals method and k,
-solver damping and step rejection, eikonal weight, odometry weight,
-hallucination density, grid resolution, active margin, increment size,
-iteration count, Ceres backend) found no setting that beats this config;
-the stretch needs a structural fix, not tuning:
+On the full 910-scan Intel dataset, `configs/intel_smooth_gradient.yaml`
+(10 LM iterations per new scan, smooth-gradient recipe, DEC-0007) stays
+globally consistent without loop closure and resolves the interior rooms.
+Median revisit error (`tools/viz/revisit_consistency.py`): 0.065 m; the
+original implementation's saved artifacts score 0.378 m on the one-lap
+slice they cover, where this recipe scores 0.013 m. Runtime: 42 minutes on
+an M-series laptop (the recipe needs the dense state; the active-region
+config runs in 16 minutes at lower quality):
 
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 

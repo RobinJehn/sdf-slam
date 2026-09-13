@@ -6,3 +6,4 @@ compile_commands.json
 __pycache__/
 *.pyc
 .DS_Store
+data/intel_0_192/

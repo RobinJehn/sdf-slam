@@ -15,6 +15,7 @@ decisions:
 - decisions/0004-ceres-frozen-cells.md
 - decisions/0005-lean-dependency-stack.md
 - decisions/0006-out-of-domain-soft-barrier.md
+- decisions/0007-smooth-gradient-registration.md
 sources: []
 ---
 

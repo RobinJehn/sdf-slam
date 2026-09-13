@@ -1,0 +1,33 @@
+# Full Intel dataset with the smooth-gradient registration recipe
+# (DEC-0007): best known result, median revisit error 0.065 m, no corridor
+# stretch. All four parts of the recipe interact; do not change one alone.
+dataset_dir: data/intel
+output_dir: out/intel_smooth_gradient
+mode: incremental
+increment_size: 1
+iterations_per_increment: 10
+snapshot_every: 1
+active_region: false
+smooth_gradient: true
+map:
+  nx: 100
+  ny: 100
+  auto_domain: false
+  min: [-15.0, -28.0]
+  max: [38.0, 25.0]
+weights:
+  scan: 1.0
+  hallucination: 1.0
+  eikonal: 0.04
+  odometry: 1.0
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+normals:
+  method: pca
+  k_neighbors: 7
+solver:
+  backend: lm
+  lambda_init: 5.0
+  lambda_factor: 0.9
+  step_tolerance: 0.001
