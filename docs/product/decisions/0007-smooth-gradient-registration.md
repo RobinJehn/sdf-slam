@@ -39,6 +39,14 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
   scaled by cell area recovers most of it at 200x200 (0.117, thinner error
   tail, 0.27 m cells) but does not beat the 100x100 flagship; 100x100 with
   the recorded values stays the reference configuration.
+- The recovery does not extend to 150x150 (sweep 2026-09-13,
+  `smooth_gradient_step: 0.53`, 0.35 m cells): eikonal 0.018 (area-scaled)
+  and 0.009 (half) both diverge — NN 0.356 / 0.224, ICP-relations median
+  2.0 / 3.1 m vs the flagship's 0.057 m, warped maps. Resolution response
+  is not monotone, so per-resolution tuning cannot interpolate from the
+  100x100 and 200x200 results. The two 150x150 runs also rank in opposite
+  order under the NN and ICP-relations metrics — divergent runs make the
+  NN metric's compression bias visible.
 
 - `smooth_gradient` is on by default: on the simulated dataset with ground
   truth it halves the mean translation error (0.039 to 0.022) and matches the
