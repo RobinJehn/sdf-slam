@@ -11,6 +11,8 @@ never change between runs, so all runs score on identical evidence.
 
 Build:  uv run icp_relations.py build --run <ref_run> --dataset <dir> --out <csv>
 Score:  uv run icp_relations.py score --relations <csv> <run_dir> [<run_dir> ...]
+
+see DEC-0009 parameter-selection-by-ensembles
 """
 
 import argparse

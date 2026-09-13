@@ -11,6 +11,8 @@ width — the quantity that predicts whether the config survives a new
 environment, compiler, or BLAS.
 
 Usage: uv run stability_ensemble.py --config <yaml> --dataset <dir> [--runs 8]
+
+see DEC-0009 parameter-selection-by-ensembles
 """
 
 import argparse

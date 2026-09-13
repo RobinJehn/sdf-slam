@@ -4,7 +4,7 @@ title: Smooth-gradient registration recipe for real data
 type: architecture
 owner: Robin Jehn
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-14
 requirements:
 - ../PRD.md
 ---
@@ -34,31 +34,42 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 
 ## Consequences
 
-- The recipe is resolution-sensitive as recorded: naive 200x200 fails
-  (0.670 vs 0.065). `smooth_gradient_step` (meters) plus an eikonal weight
-  scaled by cell area recovers most of it at 200x200 (0.117, thinner error
-  tail, 0.27 m cells) but does not beat the 100x100 flagship; 100x100 with
-  the recorded values stays the reference configuration.
-- The 200x200 eikonal weight is tuned out (sweep 2026-09-13): 0.005 and
-  0.02 both lose to the area-scaled 0.01 on both metrics (ICP-relations
-  median 0.277 / 0.354 vs 0.141 m; NN 0.162 / 0.180 vs 0.117). The
-  area-scaled value is a bracketed local optimum, and 200x200 still loses
-  to the 100x100 flagship — eikonal weight is not the remaining gap.
-- The recovery does not extend to 150x150 (sweep 2026-09-13,
-  `smooth_gradient_step: 0.53`, 0.35 m cells): eikonal 0.009, 0.018
-  (area-scaled), and 0.036 all diverge — ICP-relations median 3.1 / 2.0 /
-  0.83 m vs the flagship's 0.057 m (NN 0.224 / 0.356 / 0.272), warped
-  maps. A 4x weight span brackets the area-scaled value, so the eikonal
-  weight is not the missing knob at this resolution. Resolution response
-  is not monotone, so per-resolution tuning cannot interpolate from the
-  100x100 and 200x200 results. The diverged runs also rank in opposite
-  order under the NN and ICP-relations metrics — divergence makes the
-  NN metric's compression bias visible.
-
-- The recipe equilibrium is chaotically sensitive: a 1e-9 relative change
-  to `lambda_init` collapses the lap-1 median from 0.013 m to 0.687 m. The
-  headline numbers are knife-edge samples, and performance work on this
-  path must be bitwise-exact (DEC-0008).
+- Resolution transfer is solved by the stencil identity (2026-09-14). The
+  default smooth gradient interpolates node central differences, so it is
+  exact per axis at every resolution. The `smooth_gradient_step` meters
+  knob reproduces it only at exactly one cell (h = extent/(nx-1)); other
+  values land in an unpredictable basin patchwork (lap-1 ensembles: ratio
+  0.95/1.05/1.25 uniformly bad, 1.10 flips 2/6, 1.50 good — no monotone
+  law). Rule: use the default stencil; the meters knob is for controlled
+  smoothing-width experiments only.
+- With the default stencil and an area-scaled eikonal weight
+  (0.04 x (h/0.5354)^2), the recipe transfers across resolutions:
+  150x150 matches the 100x100 flagship on full Intel (ICP-relations
+  median 0.052-0.057 m over three lambda-jittered runs, NN 0.080-0.093,
+  thinner tail than 100x100). 200x200 (h=0.27 m) converges but degrades
+  (0.095): a resolution floor exists near h~0.25 m for this dataset —
+  an anchored lap-1 config at h=0.20 m is uniformly bad (8/8 at
+  0.67-0.93). Earlier single-run sweeps at 150x150 and 200x200 that
+  motivated other conclusions are superseded; single runs in this regime
+  are draws from a basin distribution and rank differently under the NN
+  and ICP-relations metrics (compression bias).
+- Stability is measurable, not assumed (`tools/viz/stability_ensemble.py`,
+  8 lambda-jittered runs). Anchored configs (default stencil, h in
+  0.27-0.54 m, area-scaled eikonal) score 8/8 converged with ~zero spread
+  on every testbed tried; the original lap-1 config with unscaled eikonal
+  0.04 at h~0.25 m flips 2/8 — the area scaling is a basin-widener, not
+  only an accuracy tweak. Off-anchor points are unpredictable, and
+  `reject_worse_steps` does not rescue them.
+- Residual windows are narrow (lap-1 anchored ensembles): hallucination
+  off or points 3/12 instead of 6 is uniformly bad; hallucination weight
+  0.5-1.0 is fine; eikonal x0.5 is bad and x2 flips 4/6. Choose new
+  configurations by the anchored rules, then gate on an ensemble
+  (see DEC-0009).
+- The 1e-9 `lambda_init` chaos (DEC-0008) is config-dependent: it appears
+  near basin boundaries (original lap-1 eikonal 0.04: 2/8 diverge) and
+  vanishes deep inside anchored basins (spread 0.000). Performance work
+  must stay bitwise-exact because production configs are not guaranteed
+  to sit deep in a basin.
 - `smooth_gradient` is on by default: on the simulated dataset with ground
   truth it halves the mean translation error (0.039 to 0.022) and matches the
   dissertation's table 4.2. The exact bilinear-patch gradient stays available
