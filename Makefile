@@ -4,7 +4,7 @@ CLANG_TIDY ?= clang-tidy
 
 CXX_SOURCES := $(shell find src apps tests -name '*.cpp' -o -name '*.hpp')
 
-.PHONY: configure build test format format-check tidy bench check check-fast clean
+.PHONY: configure build test pytest format format-check tidy bench check check-fast clean
 
 configure:
 	cmake -B $(BUILD_DIR) -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -14,6 +14,9 @@ build: configure
 
 test: build
 	ctest --test-dir $(BUILD_DIR) --output-on-failure
+
+pytest:
+	cd tools/viz && uv run pytest -q
 
 format:
 	$(CLANG_FORMAT) -i $(CXX_SOURCES)
@@ -36,10 +39,10 @@ bench: build
 	./$(BUILD_DIR)/bench_solvers
 
 # Full local gate: what CI runs.
-check: format-check build test tidy
+check: format-check build test pytest tidy
 
 # Pre-commit gate: skips clang-tidy for speed.
-check-fast: format-check build test
+check-fast: format-check build test pytest
 
 clean:
 	rm -rf $(BUILD_DIR)

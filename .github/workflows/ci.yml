@@ -31,3 +31,13 @@ jobs:
 
       - name: clang-tidy
         run: make tidy
+
+  python-tools:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Test viz tools
+        run: make pytest
