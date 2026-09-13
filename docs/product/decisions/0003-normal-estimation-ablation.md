@@ -4,7 +4,7 @@ title: Normal estimation improves via ablation of two methods
 type: design
 owner: Robin Jehn
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-13
 requirements:
 - ../PRD.md
 ---
@@ -16,6 +16,8 @@ requirements:
 Grid-node normals default to the `weighted` method: the nearest scan point's kNN-PCA normal, with the Eikonal residual weight scaled down by the neighborhood's cornerness (eigenvalue ratio). `pca` (dissertation baseline) and `hybrid` (blend with the sign-matched closest-point vector) stay available behind `normals.method` for comparison.
 
 Ablation on simu_76 (2026-09-12, 100 LM iterations): on clean odometry the three methods tie. With noise [0.1, 0.1, 0.01], `weighted` cuts the mean relative rotation error to 0.00017 rad versus 0.00049 (`pca`) and 0.00046 (`hybrid`), and the absolute rotation error to 0.017 rad versus 0.030/0.026, at equal translation error.
+
+A re-run under the smooth-gradient default (2026-09-13, same noise config) keeps the ranking: `weighted` wins every metric (mean translation 0.220 versus 0.245 `pca` / 0.283 `hybrid`; mean relative rotation 0.00020 versus 0.00027 / 0.00034 rad). The margin narrows from 3x to about 1.4x on relative rotation. Note the Intel flagship recipe (DEC-0007) still sets `pca` with `k_neighbors: 7` explicitly — that combination is part of the recipe equilibrium and this simu ablation does not override it.
 
 ## Context
 
