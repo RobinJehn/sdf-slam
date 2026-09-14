@@ -122,6 +122,10 @@ Parameter changes are gated by stability ensembles
 (~34 min, certified over jittered replicates), then a two-minute batch
 polish at 200x200 warm-started from its trajectory
 (`configs/intel_polish_200.yaml`), reaching 0.050 m jitter-stable.
+When tail robustness matters, an optional loop-closure pass helps: build
+ICP relations from the first run, rerun with `relations_file` +
+`weights.relation` — the held-out error tail halves and its run-to-run
+variance collapses (DEC-0007).
 
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 
