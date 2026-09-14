@@ -26,6 +26,8 @@ The Intel configs use a four-part recipe; each part alone does not work (best si
 
 Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-1 slice 0.013 m vs the original artifacts' 0.378 m; full 910 scans 0.065 m vs 0.540 m for the previous best config. The corridor stretch is gone (robust extent 35.6 x 32.9 m).
 
+The reference configuration is the 150x150 variant (`configs/intel_smooth_gradient_150.yaml`): it reproduces its score under lambda jitter (four full runs, ICP-relations median 0.052-0.061 m). The 100x100 config produced the 0.065/0.057 headline as a single draw but fails the DEC-0009 gate — three jittered replicates give 11.4 / 0.37 / 0.31 m — so its number is not reproducible and the config sits on a basin boundary. Use 100x100 only for speed-insensitive exploration.
+
 ## Alternatives considered
 
 - Exact bilinear-patch gradient (tried, reverted 2026-09-13): analytically correct and it passes finite-difference tests, but registration quality collapses on real data.

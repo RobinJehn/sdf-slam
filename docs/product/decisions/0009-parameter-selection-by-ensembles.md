@@ -68,9 +68,12 @@ supply good candidates; only the ensemble certifies them.
   eikonal: 8/8, spread 0.000. Original eikonal 0.04 at the same grid: 2/8
   diverged. Stencil ratios 0.95/1.05/1.25: uniformly bad; 1.10: 2/6 flips.
   Anchored h = 0.20 m: uniformly bad (resolution floor).
-- Full Intel 150x150 anchored (2026-09-14, three lambda-jittered runs):
-  ICP-relations median 0.052-0.057 m — matches the 100x100 flagship at
-  1.5x resolution.
+- Full Intel 150x150 anchored (2026-09-14, four runs incl. three
+  lambda-jittered): ICP-relations median 0.052-0.061 m — reproducible.
+- Full Intel 100x100 (2026-09-14, three lambda-jittered replicates):
+  11.4 / 0.37 / 0.31 m vs the single-draw 0.057 m — the procedure caught
+  the project's own headline config sitting on a basin boundary; the
+  150x150 variant replaced it as the reference.
 - Residual windows (lap-1 ensembles, 2026-09-14): hallucination off, points
   3 or 12, eikonal x0.5 all uniformly bad; hallucination weight 0.5 fine;
   eikonal x2 flips 4/6.
