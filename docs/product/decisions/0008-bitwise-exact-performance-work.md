@@ -1,27 +1,34 @@
 ---
 id: 0008
-title: Bitwise-exact performance work on the chaotic recipe path
+title: Performance work is bitwise-exact or ensemble-certified
 type: architecture
 owner: Robin Jehn
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-14
 requirements:
 - ../PRD.md
 ---
 
-# DEC-0008 — Bitwise-exact performance work on the chaotic recipe path
+# DEC-0008 — Performance work is bitwise-exact or ensemble-certified
 
 ## Context
 
 Profiling showed the flagship run spends 96 % of its time in the solver: sparse LDLT ~55-61 %, the J^T J product ~16-19 %, Jacobian triplet merging ~10-13 %, Cost() ~9-11 %. Faster linear solvers (CHOLMOD supernodal LLT) and any parallel reduction change the floating-point rounding of the LM steps.
 
-An experiment settled how much rounding freedom exists: a 1e-9 relative change to lambda_init collapses the lap-1 revisit median from 0.013 m to 0.687 m. CHOLMOD (a different elimination ordering, same mathematics) gives 0.782 m. The incremental recipe (DEC-0007) runs a fixed 10-iteration budget per increment, never converges tightly, and amplifies last-ulp step differences into macroscopic trajectory changes.
+An experiment settled how much rounding freedom exists on a boundary-sitting config: a 1e-9 relative change to lambda_init collapses the lap-1 revisit median from 0.013 m to 0.687 m. CHOLMOD (a different elimination ordering, same mathematics) gives 0.782 m. The incremental recipe (DEC-0007) runs a fixed iteration budget per increment, never converges tightly, and amplifies last-ulp step differences into macroscopic trajectory changes.
+
+A rounding change is therefore a basin redraw, not a small accuracy loss: no numeric tolerance separates "bitwise" from "broken" near a basin boundary. But the chaos is config-dependent (DEC-0007): anchored configs sit deep in their basins (8/8 jittered runs, spread 0.000), and DEC-0009 provides a statistical gate that certifies any perturbation — a config change or a binary change — on ensembles instead of single runs. On the 150x150 reference the bitwise constraint also caps the achievable speedup: the serial LDLT elimination-tree trunk dominates, and the bitwise-exact parallel kernels gain only ~5 %.
 
 ## Decision
 
-Performance work on the recipe path must be bitwise-exact. A change qualifies only when the optimized binary reproduces the reference artifacts bit for bit (poses_estimated.csv and map.txt on the lap-1 testbed, then on a full flagship run).
+Performance work on the recipe path follows a two-tier policy (revised 2026-09-14):
 
-Techniques that qualify, all landed:
+1. **Refactor tier.** A change that claims "same computation, faster" must reproduce the reference artifacts bit for bit (poses_estimated.csv and map.txt on the lap-1 testbed, then on a full reference run). The bitwise diff is the complete and cheap verification; no ensemble is needed.
+2. **Reordering tier.** A change that reorders floating-point arithmetic (different linear solver, parallel reductions, changed contraction) is admissible when the new binary re-passes the full DEC-0009 gate on each production config: an 8-jitter lap-1 ensemble with 8/8 convergence and near-zero spread, then at least 3 lambda-jittered full runs scored on the frozen ICP relations and the rendered map, with the median inside the reference band (0.052-0.062 m stage-1). Certification binds to the (binary, config) pair: a new production config or a further reordering change repeats the gate.
+
+Blanket numeric tolerances stay forbidden: the gate is statistical, never "the metric moved by less than X on one run".
+
+Refactor-tier techniques, all landed:
 
 - Cache Cost() values in the LM loop instead of recomputing on bitwise-unchanged state (3 calls per iteration down to 1).
 - Parallelize per-element loops whose outputs are independent slots: scan normals, node normals, point and Eikonal row assembly.
@@ -30,14 +37,20 @@ Techniques that qualify, all landed:
 
 Unit tests assert bitwise equality of ParallelSimplicialLdlt against Eigen's SimplicialLDLT across thread counts.
 
+Reordering-tier candidates, gated per DEC-0009 before adoption:
+
+- CHOLMOD supernodal LLT (`solver.linear_solver: cholmod`, 1.8x faster on lap-1): the 2026-09-13 rejection measured a boundary-sitting config; retest on the anchored reference.
+- Trunk-parallel LDLT factorization: the remaining large lever on the 150x150 reference.
+
 ## Consequences
 
-- The recipe's headline numbers (0.065 m full Intel, 0.013 m lap-1) are knife-edge samples, not robust properties. Any dissertation-comparison claim needs this caveat; a different compiler, BLAS, or machine will produce different (likely much worse) metrics from the same config.
-- `solver.linear_solver: cholmod` exists for experiments but is out of spec for the recipe: it changes the numbers, so a cholmod run is a new experiment, not a faster reproduction.
+- The recipe's headline numbers are knife-edge samples, not robust properties. Any dissertation-comparison claim needs this caveat; a different compiler, BLAS, or machine will produce different metrics from the same config unless the config passes the gate there too.
+- A reordering-tier change costs a gate run per production config (~20 min lap-1 ensemble plus ~2 h of jittered full runs). Prefer refactor-tier wins for quick iterations.
 - Symbolic-analysis reuse in the LDLT is near-useless here (the J^T J pattern changes in ~99 % of iterations because points cross cells), so the win comes from parallelizing the numeric factorization, not from caching the analysis.
 
 ## Alternatives considered
 
-- CHOLMOD supernodal LLT as the default (tried, rejected 2026-09-13): 1.8x faster on lap-1 but metric collapses (0.782 m) — chaos, not a bug; verified against a clean matrix churn test.
-- Metric-equivalent tolerance for perf changes (rejected): the perturbation experiment shows no numeric tolerance exists between "bitwise" and "broken".
+- Bitwise-exactness as the only admissible standard (was the decision 2026-09-13, relaxed 2026-09-14): safe but caps the reference-config speedup at ~5 % because the LDLT trunk stays serial; the DEC-0009 gate now certifies reorderings statistically.
+- Metric-equivalent tolerance for perf changes (rejected): no numeric tolerance exists between "bitwise" and "broken" near a basin boundary; single-run comparisons cannot certify a reordering. The reordering tier replaces the tolerance with an ensemble gate.
+- CHOLMOD supernodal LLT as the default (tried, rejected 2026-09-13 on the old flagship config; reopened 2026-09-14 as a reordering-tier candidate): 1.8x faster on lap-1; the 0.782 m collapse came from a config the gate later classified as boundary-sitting.
 - Per-increment problem caching (rejected as primary lever): the Problem constructor is only ~3 % of runtime; the pre-profiling hypothesis that per-increment rebuilds dominate was wrong.
