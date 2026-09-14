@@ -28,10 +28,13 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 
 The reference configuration is the 150x150 variant (`configs/intel_smooth_gradient_150.yaml`): it reproduces its score under lambda jitter (four full runs, ICP-relations median 0.052-0.061 m). The 100x100 config produced the 0.065/0.057 headline as a single draw but fails the DEC-0009 gate — three jittered replicates give 11.4 / 0.37 / 0.31 m — so its number is not reproducible and the config sits on a basin boundary. Use 100x100 only for speed-insensitive exploration.
 
+A second stage completes the pipeline (2026-09-14): a batch polish at 200x200 warm-started from the reference trajectory (`configs/intel_polish_200.yaml`, ~2 min) improves the score to 0.054 m and is jitter-stable to the last digit — batch mode avoids the incremental chaining that makes the landscape chaotic. The polish also converges at 300x300 (0.055): the incremental resolution floor (h ~ 0.25 m) does not bind in the warm batch regime, so resolution above the floor is a polish concern, not an incremental one. 200x200 is the sweet spot; 0.054-0.055 is likely the ICP-reference noise limit.
+
 ## Alternatives considered
 
 - Exact bilinear-patch gradient (tried, reverted 2026-09-13): analytically correct and it passes finite-difference tests, but registration quality collapses on real data.
-- Trust-region LM, Huber loss, Marquardt scaling, per-scan normals, batch polish (tried 2026-09-13): none closed the gap; kept as options where implemented.
+- Trust-region LM, Huber loss, Marquardt scaling, per-scan normals (tried 2026-09-13): none closed the gap; kept as options where implemented.
+- Cold batch polish (tried 2026-09-13, revised 2026-09-14): from odometry it lands in a local minimum, but warm-started from the anchored reference trajectory it is the second pipeline stage (see Consequences).
 - Active-region state with the smooth-gradient recipe: incompatible, since the global Eikonal field needs every node in the state. Active region stays available for speed-focused runs (DEC-0002).
 
 ## Consequences

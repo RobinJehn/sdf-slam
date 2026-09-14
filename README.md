@@ -117,7 +117,10 @@ of 0.052-0.061 m across four lambda-jittered full runs. The 100x100
 config above produced 0.065/0.057 as a single draw but does not reproduce
 it under jitter (11.4 / 0.37 / 0.31 m) — treat its headline as historical.
 Parameter changes are gated by stability ensembles
-(`tools/viz/stability_ensemble.py`).
+(`tools/viz/stability_ensemble.py`). A two-minute batch polish at 200x200
+warm-started from the reference trajectory (`configs/intel_polish_200.yaml`)
+improves the final score to 0.054 m and is jitter-stable — the recommended
+final stage.
 
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 

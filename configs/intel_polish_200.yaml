@@ -1,0 +1,34 @@
+# Second stage of the two-stage Intel pipeline (DEC-0007): batch polish at
+# 200x200 warm-started from the 150x150 reference run's trajectory. Runs in
+# ~2 min after the reference and improves it (ICP-relations median 0.061 ->
+# 0.054 m, jitter-stable to the last digit). Requires
+# out/intel_smooth_gradient_150/poses_estimated.csv.
+dataset_dir: data/intel
+initial_poses: out/intel_smooth_gradient_150/poses_estimated.csv
+output_dir: out/intel_polish_200
+mode: batch
+active_region: false
+smooth_gradient: true
+map:
+  nx: 200
+  ny: 200
+  auto_domain: false
+  min: [-15.0, -28.0]
+  max: [38.0, 25.0]
+weights:
+  scan: 1.0
+  hallucination: 1.0
+  eikonal: 0.01
+  odometry: 1.0
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+normals:
+  method: pca
+  k_neighbors: 7
+solver:
+  backend: lm
+  lambda_init: 5.0
+  lambda_factor: 0.9
+  step_tolerance: 0.001
+  max_iterations: 100
