@@ -106,10 +106,13 @@ The reference runs 5 solver iterations per increment (certified 3/3 jittered run
   residuals between revisit pairs (built by `tools/viz/icp_relations.py`
   from a previous run's estimate). On held-out pairs the stage-1 error
   tail nearly halves (mean 0.206 to 0.113 m at equal median); the
-  polished result gains a little more (0.118 to 0.109). Two-pass
-  workflow: run once without relations, build relations from that
-  estimate, rerun with them. Evaluate only on held-out pairs the
-  constraints never saw.
+  polished result gains a little more (0.118 to 0.109). Certified over
+  four lambda-jittered runs: held-out mean stays in 0.113-0.116 while
+  the plain reference spreads 0.108-0.206 — the relations also collapse
+  the tail variance, a third structural stabilizer besides the eikonal
+  area scaling and the warm polish. Two-pass workflow: run once without
+  relations, build relations from that estimate, rerun with them.
+  Evaluate only on held-out pairs the constraints never saw.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
