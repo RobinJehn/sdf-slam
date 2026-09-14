@@ -28,7 +28,8 @@ Configure a new dataset or resolution in three steps:
 
 1. **Anchor.** Compute candidates from the scaling rules instead of tuning
    freely: default smooth-gradient stencil (never the meters knob for
-   production); cell size h between 0.27 and 0.54 m for indoor lidar,
+   production); cell size h between 0.27 and 0.54 m for indoor lidar
+   (below 0.27 m the response is patchwork — the gate decides),
    h = extent/(nx-1); eikonal weight 0.04 x (h/0.5354)^2; the other recipe
    values as recorded in DEC-0007.
 2. **Gate on an ensemble.** Run the candidate 8 times with 1e-9-scale

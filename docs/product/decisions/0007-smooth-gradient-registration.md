@@ -52,9 +52,11 @@ A second stage completes the pipeline (2026-09-14): a batch polish at 200x200 wa
   150x150 matches the 100x100 flagship on full Intel (ICP-relations
   median 0.052-0.057 m over three lambda-jittered runs, NN 0.080-0.093,
   thinner tail than 100x100). 200x200 (h=0.27 m) converges but degrades
-  (0.095): a resolution floor exists near h~0.25 m for this dataset —
-  an anchored lap-1 config at h=0.20 m is uniformly bad (8/8 at
-  0.67-0.93). Earlier single-run sweeps at 150x150 and 200x200 that
+  (0.095). Below h ~ 0.27 m the incremental response is patchwork, not a
+  floor (lap-1 anchored ensembles: h=0.268 and 0.230 uniformly good,
+  0.247 and 0.201 uniformly bad) — the DEC-0009 gate decides, and the
+  warm batch polish is the reliable route to finer grids anyway.
+  Earlier single-run sweeps at 150x150 and 200x200 that
   motivated other conclusions are superseded; single runs in this regime
   are draws from a basin distribution and rank differently under the NN
   and ICP-relations metrics (compression bias).
