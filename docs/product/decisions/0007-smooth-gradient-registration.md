@@ -94,6 +94,15 @@ The reference runs 5 solver iterations per increment (certified 3/3 jittered run
   diverges on the full dataset (0.411 vs 0.065 NN; 3.1 m vs 0.057 m
   median ICP-relations error; ghosted map) — another case where the
   lap-1 slice does not proxy the full box.
+- Wheel odometry beats scan-matched odometry as the residual anchor
+  (ensembles 2026-09-14): odometry-as-init-only is uniformly bad (6/6 at
+  0.55-0.65), and replacing the wheel relative poses with point-to-line
+  ICP odometry (`tools/viz/icp_odometry.py`) is also bad at loose and
+  strict guards (5/6 and 4/6 bad). The scan-to-map residuals already do
+  the matching inside the joint solve; pre-matched odometry injects
+  correlated errors, while wheel noise is unbiased and averages out.
+  Untested: pairwise ICP constraints as an additional residual type
+  (needs solver support).
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
