@@ -113,6 +113,19 @@ The reference runs 5 solver iterations per increment (certified 3/3 jittered run
   area scaling and the warm polish. Two-pass workflow: run once without
   relations, build relations from that estimate, rerun with them.
   Evaluate only on held-out pairs the constraints never saw.
+- Relation gaps have a crossover between 2 and 5 (lap-1 ensembles,
+  2026-09-14; `icp_relations.py build --min-gap/--max-gap` selects gap
+  bands): a gap-2-only web is uniformly bad (8/8 at ~0.72 vs baseline
+  0.011) — the same correlated-error mechanism that broke ICP odometry —
+  while a gap-5 web and a mixed band [2,10] with 3 pairs per frame both
+  pass 8/8 at baseline accuracy. The relation weight window is narrow:
+  1.0 passes, 2.0 diverges 4/8, 5.0 diverges 7/8. On full Intel a dense
+  band-[2,10] web (1649 pairs) scores median 0.053-0.055 vs the plain
+  reference 0.055-0.062 on the frozen benchmark (three jittered runs,
+  disjoint evidence) but does not collapse the tail variance (means
+  0.119-0.137) and adds ~2.7x stage-1 runtime. Sparse loop-closure
+  relations remain the better stabilizer per unit compute; the dense web
+  is a certified but not recommended variant.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
