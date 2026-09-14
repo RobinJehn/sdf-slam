@@ -23,7 +23,6 @@ from scipy.spatial import cKDTree
 
 from make_video import load_scan
 from plot_map import load_poses
-from revisit_consistency import revisit_pairs
 
 
 def pose_matrix(pose: np.ndarray) -> np.ndarray:
@@ -136,16 +135,22 @@ def translation_observability(normals: np.ndarray) -> float:
 
 
 def select_pairs(
-    poses: np.ndarray, min_gap: int, radius: float, per_frame: int
+    poses: np.ndarray, min_gap: int, radius: float, per_frame: int, max_gap: int | None = None
 ) -> list[tuple[int, int]]:
-    """Select (i, j) revisit pairs: for each frame j, the `per_frame` old
-    frames (gap >= min_gap) with the smallest pose distance below `radius`."""
+    """Select (i, j) pairs: for each frame j, the `per_frame` old frames with
+    gap j - i in [min_gap, max_gap] (inclusive) and the smallest pose distance
+    below `radius`. `max_gap` None leaves the band open above (revisit
+    selection); a finite band selects short/medium-gap relation webs."""
     selected = []
-    for j, old_ids in revisit_pairs(poses, min_gap, radius).items():
-        by_distance = sorted(
-            old_ids, key=lambda i: np.hypot(poses[i, 0] - poses[j, 0], poses[i, 1] - poses[j, 1])
-        )
-        selected.extend((i, j) for i in by_distance[:per_frame])
+    for j in range(len(poses)):
+
+        def distance(i: int, j: int = j) -> float:
+            return float(np.hypot(poses[i, 0] - poses[j, 0], poses[i, 1] - poses[j, 1]))
+
+        first = 0 if max_gap is None else max(0, j - max_gap)
+        candidates = [i for i in range(first, j - min_gap + 1) if distance(i) < radius]
+        candidates.sort(key=distance)
+        selected.extend((i, j) for i in candidates[:per_frame])
     return selected
 
 
@@ -159,7 +164,7 @@ def pose_error(reference: np.ndarray, estimate: np.ndarray) -> tuple[float, floa
 def build(args: argparse.Namespace) -> None:
     poses = load_poses(args.run / "poses_estimated.csv")
     scans = [load_scan(p) for p in sorted(args.dataset.glob("scan*.pcd"))]
-    pairs = select_pairs(poses, args.min_gap, args.radius, args.per_frame)
+    pairs = select_pairs(poses, args.min_gap, args.radius, args.per_frame, args.max_gap)
     print(f"{len(pairs)} candidate pairs from {args.run.name}")
 
     rows = []
@@ -228,6 +233,9 @@ def main() -> None:
     p_build.add_argument("--dataset", type=Path, required=True)
     p_build.add_argument("--out", type=Path, required=True)
     p_build.add_argument("--min-gap", type=int, default=200)
+    p_build.add_argument("--max-gap", type=int, default=None,
+                         help="largest frame gap (inclusive); selects a gap band "
+                         "for short/medium relation webs instead of revisits")
     p_build.add_argument("--radius", type=float, default=3.0)
     p_build.add_argument("--per-frame", type=int, default=1,
                          help="reference pairs per revisit frame")

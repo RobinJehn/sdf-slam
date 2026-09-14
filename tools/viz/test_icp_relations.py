@@ -110,3 +110,28 @@ def test_select_pairs_picks_nearest_old_frame():
     poses[7] = [0.0, 0.0, 0.0]
     pairs = select_pairs(poses, min_gap=5, radius=3.0, per_frame=1)
     assert pairs == [(1, 7)]
+
+
+def test_select_pairs_gap_band_pairs_every_frame_at_fixed_gap():
+    poses = np.zeros((8, 3))
+    poses[:, 0] = np.arange(8) * 0.5
+    pairs = select_pairs(poses, min_gap=2, radius=1.2, per_frame=1, max_gap=2)
+    assert pairs == [(0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7)]
+
+
+def test_select_pairs_max_gap_excludes_older_frames():
+    poses = np.zeros((10, 3))
+    pairs = select_pairs(poses, min_gap=3, radius=1.0, per_frame=10, max_gap=4)
+    assert pairs
+    assert all(3 <= j - i <= 4 for i, j in pairs)
+    assert (5, 9) in pairs and (6, 9) in pairs
+
+
+def test_select_pairs_band_respects_per_frame_and_radius():
+    poses = np.zeros((7, 3))
+    poses[:, 0] = np.arange(7) * 1.0
+    poses[2] = [100.0, 0.0, 0.0]
+    pairs = select_pairs(poses, min_gap=1, radius=1.5, per_frame=1, max_gap=3)
+    assert (2, 3) not in pairs and (1, 2) not in pairs
+    assert (3, 4) in pairs and (0, 1) in pairs
+    assert all(pairs.count((i, j)) == 1 for i, j in pairs)
