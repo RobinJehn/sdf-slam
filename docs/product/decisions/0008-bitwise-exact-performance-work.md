@@ -37,10 +37,10 @@ Refactor-tier techniques, all landed:
 
 Unit tests assert bitwise equality of ParallelSimplicialLdlt against Eigen's SimplicialLDLT across thread counts.
 
-Reordering-tier candidates, gated per DEC-0009 before adoption:
+Reordering-tier results:
 
-- CHOLMOD supernodal LLT (`solver.linear_solver: cholmod`, 1.8x faster on lap-1): the 2026-09-13 rejection measured a boundary-sitting config; retest on the anchored reference.
-- Trunk-parallel LDLT factorization: the remaining large lever on the 150x150 reference.
+- CHOLMOD supernodal LLT (`solver.linear_solver: cholmod`) is CERTIFIED on the anchored reference (2026-09-14): lap-1 ensemble 8/8 at 0.011 with spread 0.000; three lambda-jittered full runs at ICP-relations median 0.053-0.055 m (reference band 0.052-0.062), means 0.115-0.129, healthy maps. Stage 1 drops from ~34 to ~17-18 min and the warm 200x200 polish from ~2 min to ~60 s (jitter-stable to the last digit, median 0.053). Config: `configs/intel_smooth_gradient_150_cholmod.yaml`. The 2026-09-13 rejection (0.782 m) measured a boundary-sitting config; deep in the anchored basin the reordering is harmless.
+- Trunk-parallel LDLT factorization: open candidate; less urgent now that CHOLMOD removes the serial-trunk bottleneck.
 
 ## Consequences
 
