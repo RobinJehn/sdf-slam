@@ -9,7 +9,8 @@
 namespace sdf_slam {
 
 Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>& scans,
-                 const std::vector<Pose2>& odometry, const ProblemOptions& options)
+                 const std::vector<Pose2>& odometry, const ProblemOptions& options,
+                 const std::vector<RelationMeasurement>& relations)
     : map_(std::move(map)),
       poses_(std::move(poses)),
       huber_delta_(options.huber_delta),
@@ -95,7 +96,21 @@ Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>&
   // Odometry residuals between consecutive frames.
   const double sqrt_wo = std::sqrt(options.weights.odometry);
   for (size_t i = 0; i + 1 < scans.size() && i < odometry.size(); ++i) {
-    odom_specs_.push_back({static_cast<int>(i), odometry[i], sqrt_wo});
+    odom_specs_.push_back({static_cast<int>(i), static_cast<int>(i) + 1, odometry[i], sqrt_wo});
+  }
+
+  // Relation residuals between arbitrary frame pairs. Pairs beyond the
+  // current frame count are skipped so incremental growth can reuse one
+  // full-dataset relations set.
+  const double sqrt_wr = std::sqrt(options.weights.relation);
+  const int frames = static_cast<int>(scans.size());
+  for (const RelationMeasurement& rel : relations) {
+    if (rel.frame_i < 0 || rel.frame_j <= rel.frame_i) {
+      throw std::invalid_argument("relation frames must satisfy 0 <= i < j");
+    }
+    if (rel.frame_j < frames) {
+      odom_specs_.push_back({rel.frame_i, rel.frame_j, rel.measurement, sqrt_wr});
+    }
   }
 }
 
@@ -134,7 +149,7 @@ double Problem::Cost() const {
   for (const auto& spec : odom_specs_) {
     const OdomResidualJacobian eval =
         EvalOdomResidual(poses_[static_cast<size_t>(spec.frame_i)],
-                         poses_[static_cast<size_t>(spec.frame_i) + 1], spec.measurement);
+                         poses_[static_cast<size_t>(spec.frame_j)], spec.measurement);
     cost += (spec.sqrt_weight * eval.residual).squaredNorm();
   }
   return cost;

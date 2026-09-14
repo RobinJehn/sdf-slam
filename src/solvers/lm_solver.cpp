@@ -275,9 +275,9 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
     AssemblyChunk tail;
     for (size_t o = 0; o < problem.odom_specs().size(); ++o) {
       const OdomSpec& spec = problem.odom_specs()[o];
-      const OdomResidualJacobian eval = EvalOdomResidual(
-          problem.poses()[static_cast<size_t>(spec.frame_i)],
-          problem.poses()[static_cast<size_t>(spec.frame_i) + 1], spec.measurement);
+      const OdomResidualJacobian eval =
+          EvalOdomResidual(problem.poses()[static_cast<size_t>(spec.frame_i)],
+                           problem.poses()[static_cast<size_t>(spec.frame_j)], spec.measurement);
       const int row = num_point_rows + num_eik_rows + 3 * static_cast<int>(o);
       for (int r = 0; r < 3; ++r) {
         tail.residuals.emplace_back(row + r, spec.sqrt_weight * eval.residual[r]);
@@ -287,7 +287,7 @@ SolveResult SolveLm(Problem& problem, const SolverOptions& options) {
             tail.triplets.emplace_back(row + r, col_i + c, spec.sqrt_weight * eval.d_pose_i(r, c));
           }
         }
-        const int col_j = problem.PoseColumn(spec.frame_i + 1);
+        const int col_j = problem.PoseColumn(spec.frame_j);
         for (int c = 0; c < 3; ++c) {
           tail.triplets.emplace_back(row + r, col_j + c, spec.sqrt_weight * eval.d_pose_j(r, c));
         }

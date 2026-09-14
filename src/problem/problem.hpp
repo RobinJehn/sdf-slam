@@ -18,6 +18,10 @@ struct Weights {
   double hallucination{1.0};
   double eikonal{1.0};
   double odometry{1.0};
+  /// Weight of relation residuals (ICP-verified relative poses between
+  /// arbitrary frame pairs, e.g. loop closures). see DEC-0007
+  /// smooth-gradient-registration
+  double relation{1.0};
 };
 
 /// A scan or hallucinated point residual: r = D(T_frame p) - expected_sdf.
@@ -36,11 +40,21 @@ struct EikonalSpec {
   double sqrt_weight{1.0};
 };
 
-/// A relative odometry residual between frames i and i+1.
+/// A relative pose residual between frames i and j: consecutive odometry
+/// (j = i + 1) or a relation between arbitrary frames (loop closure).
 struct OdomSpec {
   int frame_i{0};
+  int frame_j{0};
   Pose2 measurement;
   double sqrt_weight{1.0};
+};
+
+/// A measured relative pose between two frames, fed to the problem as an
+/// extra residual (e.g. from ICP on a revisit pair).
+struct RelationMeasurement {
+  int frame_i{0};
+  int frame_j{0};
+  Pose2 measurement;
 };
 
 struct ProblemOptions {
@@ -75,10 +89,14 @@ struct ProblemOptions {
 class Problem {
  public:
   /// Builds the problem for the given frames. `odometry` holds the relative
-  /// measurement from frame i to i+1 (size = frames - 1). Normals and
-  /// hallucinated points are generated from the current poses.
+  /// measurement from frame i to i+1 (size = frames - 1). `relations` holds
+  /// relative measurements between arbitrary frame pairs; pairs whose frames
+  /// exceed the frame count are skipped, so a full-dataset relations set
+  /// works during incremental growth. Normals and hallucinated points are
+  /// generated from the current poses.
   Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>& scans,
-          const std::vector<Pose2>& odometry, const ProblemOptions& options);
+          const std::vector<Pose2>& odometry, const ProblemOptions& options,
+          const std::vector<RelationMeasurement>& relations = {});
 
   [[nodiscard]] const GridMap& map() const { return map_; }
   GridMap& map() { return map_; }

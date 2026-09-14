@@ -97,6 +97,30 @@ TEST(EndToEnd, LmSolverRecoversPerturbedPose) {
   ExpectRecovered(problem, setup, result.initial_cost, result.final_cost);
 }
 
+TEST(EndToEnd, RelationResidualReplacesOdometry) {
+  // The same recovery must work when the relative-pose measurement arrives as
+  // a relation between frames 0 and 1 instead of consecutive odometry.
+  const E2eSetup setup = MakeSetup();
+  const std::vector<RelationMeasurement> relations = {{0, 1, setup.odometry[0]}};
+  Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, {}, MakeProblemOptions(), relations);
+
+  SolverOptions options;
+  options.backend = SolverBackend::kLm;
+  options.max_iterations = 40;
+  const SolveResult result = Solve(problem, options);
+
+  ExpectRecovered(problem, setup, result.initial_cost, result.final_cost);
+}
+
+TEST(EndToEnd, RelationBeyondFrameCountIsSkipped) {
+  const E2eSetup setup = MakeSetup();
+  const std::vector<RelationMeasurement> relations = {{0, 5, setup.odometry[0]}};
+  Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, setup.odometry, MakeProblemOptions(),
+                  relations);
+  // Only the consecutive odometry residual remains.
+  EXPECT_EQ(problem.odom_specs().size(), 1U);
+}
+
 TEST(EndToEnd, CeresSolverRecoversPerturbedPose) {
   const E2eSetup setup = MakeSetup();
   Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, setup.odometry,

@@ -17,6 +17,30 @@ namespace sdf_slam {
 
 namespace {
 
+/// Parses a relations CSV (header line, then i,j,dx,dy,dtheta[,...]) into
+/// relation measurements. Trailing columns (residual, inliers) are ignored.
+std::vector<RelationMeasurement> LoadRelations(const std::filesystem::path& path) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    throw std::runtime_error("cannot open relations file: " + path.string());
+  }
+  std::vector<RelationMeasurement> relations;
+  std::string line;
+  while (std::getline(file, line)) {
+    std::ranges::replace(line, ',', ' ');
+    std::istringstream stream(line);
+    RelationMeasurement rel;
+    double dx = 0.0;
+    double dy = 0.0;
+    double dtheta = 0.0;
+    if (stream >> rel.frame_i >> rel.frame_j >> dx >> dy >> dtheta) {
+      rel.measurement = {dx, dy, dtheta};
+      relations.push_back(rel);
+    }
+  }
+  return relations;
+}
+
 std::vector<Pose2> RelativeOdometry(const std::vector<Pose2>& poses) {
   std::vector<Pose2> odometry;
   odometry.reserve(poses.size() - 1);
@@ -167,6 +191,10 @@ SolveResult Run(const RunConfig& config) {
     throw std::runtime_error("dataset needs at least two scans");
   }
   const std::vector<Pose2> odometry = RelativeOdometry(dataset.poses);
+  std::vector<RelationMeasurement> relations;
+  if (!config.relations_file.empty()) {
+    relations = LoadRelations(config.relations_file);
+  }
   GridMap map = BuildMap(config.map, dataset);
 
   SolveResult total;
@@ -180,7 +208,7 @@ SolveResult Run(const RunConfig& config) {
         throw std::runtime_error("initial_poses count != scan count");
       }
     }
-    Problem problem(std::move(map), initial, dataset.scans, odometry, config.problem);
+    Problem problem(std::move(map), initial, dataset.scans, odometry, config.problem, relations);
     total = Solve(problem, config.solver);
     estimated = problem.poses();
     map = problem.map();
@@ -212,7 +240,8 @@ SolveResult Run(const RunConfig& config) {
           dataset.scans.begin(), dataset.scans.begin() + static_cast<std::ptrdiff_t>(next_frame));
       const std::vector<Pose2> odom_so_far(
           odometry.begin(), odometry.begin() + static_cast<std::ptrdiff_t>(next_frame - 1));
-      Problem problem(std::move(map), estimated, scans_so_far, odom_so_far, config.problem);
+      Problem problem(std::move(map), estimated, scans_so_far, odom_so_far, config.problem,
+                      relations);
       const SolveResult step = Solve(problem, step_options);
       estimated = problem.poses();
       map = problem.map();

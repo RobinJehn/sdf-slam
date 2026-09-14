@@ -79,12 +79,13 @@ RunMode ParseMode(const std::string& name) {
 
 RunConfig LoadConfig(const std::filesystem::path& path) {
   const YAML::Node root = YAML::LoadFile(path.string());
-  CheckKnownKeys(root,
-                 {"dataset_dir", "ground_truth_poses", "initial_poses", "output_dir", "mode",
-                  "increment_size", "iterations_per_increment", "snapshot_every", "map", "weights",
-                  "hallucination", "normals", "huber_delta", "smooth_gradient",
-                  "smooth_gradient_step", "active_region", "active_margin", "solver"},
-                 "root");
+  CheckKnownKeys(
+      root,
+      {"dataset_dir", "ground_truth_poses", "initial_poses", "relations_file", "output_dir", "mode",
+       "increment_size", "iterations_per_increment", "snapshot_every", "map", "weights",
+       "hallucination", "normals", "huber_delta", "smooth_gradient", "smooth_gradient_step",
+       "active_region", "active_margin", "solver"},
+      "root");
 
   RunConfig config;
   if (root["dataset_dir"]) {
@@ -97,6 +98,9 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   }
   if (root["initial_poses"]) {
     config.initial_poses = root["initial_poses"].as<std::string>();
+  }
+  if (root["relations_file"]) {
+    config.relations_file = root["relations_file"].as<std::string>();
   }
   if (root["output_dir"]) {
     config.output_dir = root["output_dir"].as<std::string>();
@@ -133,11 +137,13 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
   }
 
   if (const YAML::Node weights = root["weights"]) {
-    CheckKnownKeys(weights, {"scan", "hallucination", "eikonal", "odometry"}, "weights");
+    CheckKnownKeys(weights, {"scan", "hallucination", "eikonal", "odometry", "relation"},
+                   "weights");
     Assign(weights, "scan", config.problem.weights.scan);
     Assign(weights, "hallucination", config.problem.weights.hallucination);
     Assign(weights, "eikonal", config.problem.weights.eikonal);
     Assign(weights, "odometry", config.problem.weights.odometry);
+    Assign(weights, "relation", config.problem.weights.relation);
   }
 
   if (const YAML::Node hall = root["hallucination"]) {

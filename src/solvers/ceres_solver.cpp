@@ -187,7 +187,7 @@ SolveResult SolveCeres(Problem& problem, const SolverOptions& options) {
   for (const auto& spec : problem.odom_specs()) {
     ceres_problem.AddResidualBlock(new OdomCost(spec.measurement, spec.sqrt_weight), nullptr,
                                    pose_values[static_cast<size_t>(spec.frame_i)].data(),
-                                   pose_values[static_cast<size_t>(spec.frame_i) + 1].data());
+                                   pose_values[static_cast<size_t>(spec.frame_j)].data());
   }
 
   if (ceres_problem.HasParameterBlock(pose_values[0].data())) {

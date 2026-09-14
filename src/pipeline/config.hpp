@@ -31,6 +31,10 @@ struct RunConfig {
   /// dataset odometry (e.g. a previous run's poses_estimated.csv for a global
   /// polish pass). Odometry residual measurements still come from the dataset.
   std::filesystem::path initial_poses;
+  /// Relative poses between arbitrary frame pairs, added as relation
+  /// residuals with weights.relation (CSV: header line, then
+  /// i,j,dx,dy,dtheta[,...] — the icp_relations.py output format).
+  std::filesystem::path relations_file;
   std::filesystem::path output_dir{"out"};
 
   RunMode mode{RunMode::kBatch};
