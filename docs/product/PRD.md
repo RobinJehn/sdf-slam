@@ -5,7 +5,7 @@ type: product
 status: draft
 owner: Robin Jehn
 created: 2026-09-12
-updated: 2026-09-13
+updated: 2026-09-14
 supersedes: null
 superseded_by: null
 decisions:
@@ -17,6 +17,7 @@ decisions:
 - decisions/0006-out-of-domain-soft-barrier.md
 - decisions/0007-smooth-gradient-registration.md
 - decisions/0008-bitwise-exact-performance-work.md
+- decisions/0009-parameter-selection-by-ensembles.md
 sources: []
 ---
 
