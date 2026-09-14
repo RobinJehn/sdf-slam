@@ -1,12 +1,13 @@
 # Full Intel at 150x150 (0.36 m cells): the anchored high-res variant of
 # the DEC-0007 recipe. Default smooth-gradient stencil, eikonal area-scaled
 # per DEC-0009. Matches the 100x100 flagship (ICP-relations median
-# 0.052-0.061 m over four runs) with a thinner error tail; ~65 min.
+# 0.052-0.062 m over seven runs at 5 and 10 iterations per increment)
+# with a thinner error tail; ~34 min at 5 iterations.
 dataset_dir: data/intel
 output_dir: out/intel_smooth_gradient_150
 mode: incremental
 increment_size: 1
-iterations_per_increment: 10
+iterations_per_increment: 5
 snapshot_every: 0
 active_region: false
 smooth_gradient: true
