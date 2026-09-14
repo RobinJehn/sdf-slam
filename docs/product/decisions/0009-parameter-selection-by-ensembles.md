@@ -78,6 +78,19 @@ supply good candidates; only the ensemble certifies them.
 - Residual windows (lap-1 ensembles, 2026-09-14): hallucination off, points
   3 or 12, eikonal x0.5 all uniformly bad; hallucination weight 0.5 fine;
   eikonal x2 flips 4/6.
+- Warm batch polish is parameter-insensitive (2026-09-14): two uniformly
+  bad configs (stencil ratio 0.95: 0.72; hallucination points 12: 0.55)
+  converge to the good solution when warm-started from a good trajectory
+  (0.011 / 0.013). The narrow windows above apply to the incremental
+  stage only; solver-knob stabilizers (iterations x2, tighter tolerance,
+  lambda 10, lambda_factor 0.95) do NOT widen the incremental basin, and
+  lambda_factor 0.95 makes it worse (5/6 diverged).
+
+- End-to-end demo on simu_76_noise as a fresh environment (2026-09-14):
+  the anchored config (h=0.5, eikonal 0.0349, recipe values, incremental)
+  passes the gate 6/6 with zero spread and beats the tuned sweep runs on
+  ground-truth relative errors (rel. translation 0.0029 vs 0.0043-0.0079)
+  without any per-dataset tuning.
 
 ## Consequences
 
