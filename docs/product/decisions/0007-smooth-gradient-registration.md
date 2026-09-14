@@ -101,8 +101,15 @@ The reference runs 5 solver iterations per increment (certified 3/3 jittered run
   strict guards (5/6 and 4/6 bad). The scan-to-map residuals already do
   the matching inside the joint solve; pre-matched odometry injects
   correlated errors, while wheel noise is unbiased and averages out.
-  Untested: pairwise ICP constraints as an additional residual type
-  (needs solver support).
+- ICP relations as ADDITIONAL residuals (loop closures) help
+  (2026-09-14): `relations_file` + `weights.relation` add relative-pose
+  residuals between revisit pairs (built by `tools/viz/icp_relations.py`
+  from a previous run's estimate). On held-out pairs the stage-1 error
+  tail nearly halves (mean 0.206 to 0.113 m at equal median); the
+  polished result gains a little more (0.118 to 0.109). Two-pass
+  workflow: run once without relations, build relations from that
+  estimate, rerun with them. Evaluate only on held-out pairs the
+  constraints never saw.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
