@@ -86,10 +86,11 @@ supply good candidates; only the ensemble certifies them.
   at 0.29-0.35; diverged and raw-odometry inits stay lost). The polish
   basin is wide in parameter space and narrow in state space: stage 2
   refines, stage 1 quality is irreplaceable. The narrow windows above
-  apply to the incremental stage only; solver-knob stabilizers
-  (iterations x2, tighter tolerance, lambda 10, lambda_factor 0.95) do
-  NOT widen the incremental basin, and lambda_factor 0.95 makes it worse
-  (5/6 diverged).
+  apply to the incremental stage only. Solver-knob "stabilizers" are
+  unpredictable, not merely ineffective: on one boundary config
+  lambda_factor 0.95 diverges 5/6 and iterations x2 changes nothing; on
+  another, lambda_factor 0.95 heals to 6/6 while iterations x2 turns
+  uniformly bad. Knobs relocate basins; they do not widen them.
 
 - End-to-end demo on simu_76_noise as a fresh environment (2026-09-14):
   the anchored config (h=0.5, eikonal 0.0349, recipe values, incremental)
