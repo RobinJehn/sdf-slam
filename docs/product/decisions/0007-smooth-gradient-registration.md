@@ -61,10 +61,12 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
   only an accuracy tweak. Off-anchor points are unpredictable, and
   `reject_worse_steps` does not rescue them.
 - Residual windows are narrow (lap-1 anchored ensembles): hallucination
-  off or points 3/12 instead of 6 is uniformly bad; hallucination weight
-  0.5-1.0 is fine; eikonal x0.5 is bad and x2 flips 4/6. Choose new
-  configurations by the anchored rules, then gate on an ensemble
-  (see DEC-0009).
+  off is uniformly bad; the working geometry needs point spacing at or
+  below 0.1 m AND a band at or below ~0.6 m (6 x 0.05 m: 6/6 at 0.009;
+  3 x 0.1 m: uniformly bad; 6 x 0.2 m: flips 4/6; 12 x 0.1 m: uniformly
+  bad). Hallucination weight 0.5-1.0 is fine; eikonal x0.5 is bad and x2
+  flips 4/6. Choose new configurations by the anchored rules, then gate
+  on an ensemble (see DEC-0009).
 - The 1e-9 `lambda_init` chaos (DEC-0008) is config-dependent: it appears
   near basin boundaries (original lap-1 eikonal 0.04: 2/8 diverge) and
   vanishes deep inside anchored basins (spread 0.000). Performance work

@@ -106,6 +106,18 @@ threads whose results are bitwise equal to the serial code — the recipe is
 chaotically sensitive, so optimizations must not change a single bit
 (DEC-0008):
 
+Because Intel has no ground truth and the NN revisit metric rewards
+compressed estimates, runs are also scored against frozen ICP-verified
+relative poses (`tools/viz/icp_relations.py`, `data/intel_relations_icp.csv`):
+the flagship scores 0.057 m median translation error over 189 reference
+pairs. The recipe transfers to finer grids by rule rather than re-tuning
+(DEC-0009): `configs/intel_smooth_gradient_150.yaml` (0.36 m cells,
+eikonal scaled by cell area) matches the flagship's ICP-relations score
+(0.052-0.061 m over four runs) with a thinner error tail. Parameter
+changes are gated by stability ensembles
+(`tools/viz/stability_ensemble.py`), since single runs in this regime are
+draws from a basin distribution.
+
 ![Estimated SDF map on the full Intel dataset](docs/figures/intel_full_map.png)
 
 ## Solver benchmark (simu_10, 5 LM iterations, M-series laptop)
