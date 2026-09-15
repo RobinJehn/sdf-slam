@@ -126,7 +126,14 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   disjoint evidence) but does not collapse the tail variance (means
   0.119-0.137) and adds ~2.7x stage-1 runtime. Sparse loop-closure
   relations remain the better stabilizer per unit compute; the dense web
-  is a certified but not recommended variant.
+  is a certified but not recommended variant. The web also does not
+  compose with loop closures (2026-09-15, three jittered runs each,
+  CHOLMOD reference): on held-out pairs, loop closures alone score
+  mean 0.110-0.111 while closures plus the dense web score 0.116-0.123
+  with wider medians (0.057-0.065), a distorted map in the worst run,
+  and ~2.9x runtime. Short-gap relations add correlated scan-match
+  noise that fights the closures. Recommended pipeline stays: reference,
+  optional loop-closure pass, warm polish.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
