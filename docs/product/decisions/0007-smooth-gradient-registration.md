@@ -30,7 +30,7 @@ The reference configuration is the 150x150 variant (`configs/intel_smooth_gradie
 
 A second stage completes the pipeline (2026-09-14): a batch polish at 200x200 warm-started from the reference trajectory (`configs/intel_polish_200.yaml`, ~60 s with CHOLMOD) improves the score to 0.050-0.054 m and is jitter-stable to the last digit — batch mode avoids the incremental chaining that makes the landscape chaotic. The polish also converges at 300x300: the incremental resolution patchwork does not bind in the warm batch regime, so resolution beyond the reference is a polish concern, not an incremental one. 200x200 is the sweet spot; ~0.05 m is likely the ICP-reference noise limit.
 
-The reference runs 5 solver iterations per increment with the CHOLMOD linear solver (adopted 2026-09-15 per the DEC-0008 reordering-tier gate; ~17-18 min; certified 3/3 jittered runs at 0.053-0.055 m): halving the iterations from 10 loses no accuracy and halves the runtime. Increment size 5 instead of 1 diverges (9.7 m) — increments must stay small; iterations per increment are the cheap knob.
+The reference runs 5 solver iterations per increment with the CHOLMOD linear solver (adopted 2026-09-15 per the DEC-0008 reordering-tier gate; ~17-18 min; certified 3/3 jittered runs at 0.053-0.055 m): halving the iterations from 10 loses no accuracy and halves the runtime. Increment size 5 instead of 1 diverges (9.7 m) — increments must stay small; iterations per increment are the cheap knob. The floor is 3 (2026-09-16, three jittered full runs each): 3 iterations score 0.051-0.056 m with healthy maps at ~10 min (45% faster than 5); 2 iterations diverge 3/3 (17-23 m). 5 stays the reference; 3 is the certified fast setting.
 
 ## Alternatives considered
 
