@@ -1,8 +1,8 @@
 # Second stage of the two-stage Intel pipeline (DEC-0007): batch polish at
-# 200x200 warm-started from the 150x150 reference run's trajectory. Runs in
-# ~2 min after the reference and improves it (ICP-relations median 0.061 ->
-# 0.054 m, jitter-stable to the last digit). Requires
-# out/intel_smooth_gradient_150/poses_estimated.csv.
+# 200x200 warm-started from the 150x150 reference run's trajectory.
+# Jitter-stable to the last digit; with CHOLMOD (certified 2026-09-14,
+# three jittered runs identical at 0.053 m median) it runs in ~60 s.
+# Requires out/intel_smooth_gradient_150/poses_estimated.csv.
 dataset_dir: data/intel
 initial_poses: out/intel_smooth_gradient_150/poses_estimated.csv
 output_dir: out/intel_polish_200
@@ -28,6 +28,7 @@ normals:
   k_neighbors: 7
 solver:
   backend: lm
+  linear_solver: cholmod
   lambda_init: 5.0
   lambda_factor: 0.9
   step_tolerance: 0.001

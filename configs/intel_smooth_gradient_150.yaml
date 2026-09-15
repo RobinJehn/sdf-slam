@@ -1,8 +1,10 @@
-# Full Intel at 150x150 (0.36 m cells): the anchored high-res variant of
+# Full Intel at 150x150 (0.36 m cells): the anchored reference config of
 # the DEC-0007 recipe. Default smooth-gradient stencil, eikonal area-scaled
-# per DEC-0009. Matches the 100x100 flagship (ICP-relations median
-# 0.052-0.062 m over seven runs at 5 and 10 iterations per increment)
-# with a thinner error tail; ~34 min at 5 iterations.
+# per DEC-0009. ICP-relations median 0.052-0.062 m across ten certified
+# runs. CHOLMOD is the reference linear solver (DEC-0008 reordering tier,
+# certified 2026-09-14: lap-1 ensemble 8/8 spread 0.000, three jittered
+# full runs at 0.053-0.055 m, healthy maps); it also matches the original
+# dissertation repo's solver. ~17-18 min at 5 iterations per increment.
 dataset_dir: data/intel
 output_dir: out/intel_smooth_gradient_150
 mode: incremental
@@ -30,6 +32,7 @@ normals:
   k_neighbors: 7
 solver:
   backend: lm
+  linear_solver: cholmod
   lambda_init: 5.0
   lambda_factor: 0.9
   step_tolerance: 0.001

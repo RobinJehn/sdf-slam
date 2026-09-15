@@ -118,10 +118,14 @@ config above produced 0.065/0.057 as a single draw but does not reproduce
 it under jitter (11.4 / 0.37 / 0.31 m) — treat its headline as historical.
 Parameter changes are gated by stability ensembles
 (`tools/viz/stability_ensemble.py`). The recommended pipeline is two-stage
-(~36 min total): the 150x150 reference at 5 iterations per increment
-(~34 min, certified over jittered replicates), then a two-minute batch
+(~18-19 min total): the 150x150 reference at 5 iterations per increment
+(~17-18 min, certified over jittered replicates), then a ~60 s batch
 polish at 200x200 warm-started from its trajectory
-(`configs/intel_polish_200.yaml`), reaching 0.050 m jitter-stable.
+(`configs/intel_polish_200.yaml`), reaching ~0.05 m jitter-stable.
+Both stages use CHOLMOD as the linear solver — the same solver the
+original dissertation repo used — certified per the DEC-0008 reordering
+tier (a solver change is a rounding-order change, so it re-passed the
+full DEC-0009 gate).
 When tail robustness matters, an optional loop-closure pass helps: build
 ICP relations from the first run, rerun with `relations_file` +
 `weights.relation` — the held-out error tail halves and its run-to-run

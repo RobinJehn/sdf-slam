@@ -4,7 +4,7 @@ title: Smooth-gradient registration recipe for real data
 type: architecture
 owner: Robin Jehn
 created: 2026-09-13
-updated: 2026-09-14
+updated: 2026-09-15
 requirements:
 - ../PRD.md
 ---
@@ -28,9 +28,9 @@ Benchmark (median revisit-consistency, `tools/viz/revisit_consistency.py`): lap-
 
 The reference configuration is the 150x150 variant (`configs/intel_smooth_gradient_150.yaml`): it reproduces its score under lambda jitter (four full runs, ICP-relations median 0.052-0.061 m). The 100x100 config produced the 0.065/0.057 headline as a single draw but fails the DEC-0009 gate — three jittered replicates give 11.4 / 0.37 / 0.31 m — so its number is not reproducible and the config sits on a basin boundary. Use 100x100 only for speed-insensitive exploration.
 
-A second stage completes the pipeline (2026-09-14): a batch polish at 200x200 warm-started from the reference trajectory (`configs/intel_polish_200.yaml`, ~2 min) improves the score to 0.050-0.054 m and is jitter-stable to the last digit — batch mode avoids the incremental chaining that makes the landscape chaotic. The polish also converges at 300x300: the incremental resolution patchwork does not bind in the warm batch regime, so resolution beyond the reference is a polish concern, not an incremental one. 200x200 is the sweet spot; ~0.05 m is likely the ICP-reference noise limit.
+A second stage completes the pipeline (2026-09-14): a batch polish at 200x200 warm-started from the reference trajectory (`configs/intel_polish_200.yaml`, ~60 s with CHOLMOD) improves the score to 0.050-0.054 m and is jitter-stable to the last digit — batch mode avoids the incremental chaining that makes the landscape chaotic. The polish also converges at 300x300: the incremental resolution patchwork does not bind in the warm batch regime, so resolution beyond the reference is a polish concern, not an incremental one. 200x200 is the sweet spot; ~0.05 m is likely the ICP-reference noise limit.
 
-The reference runs 5 solver iterations per increment (certified 3/3 jittered runs at 0.055-0.062 m, ~34 min): halving the iterations from 10 loses no accuracy and halves the runtime. Increment size 5 instead of 1 diverges (9.7 m) — increments must stay small; iterations per increment are the cheap knob.
+The reference runs 5 solver iterations per increment with the CHOLMOD linear solver (adopted 2026-09-15 per the DEC-0008 reordering-tier gate; ~17-18 min; certified 3/3 jittered runs at 0.053-0.055 m): halving the iterations from 10 loses no accuracy and halves the runtime. Increment size 5 instead of 1 diverges (9.7 m) — increments must stay small; iterations per increment are the cheap knob.
 
 ## Alternatives considered
 
@@ -79,8 +79,9 @@ The reference runs 5 solver iterations per increment (certified 3/3 jittered run
 - The 1e-9 `lambda_init` chaos (DEC-0008) is config-dependent: it appears
   near basin boundaries (original lap-1 eikonal 0.04: 2/8 diverge) and
   vanishes deep inside anchored basins (spread 0.000). Performance work
-  must stay bitwise-exact because production configs are not guaranteed
-  to sit deep in a basin.
+  follows the DEC-0008 two-tier policy: refactors stay bitwise-exact,
+  and arithmetic reorderings need the DEC-0009 gate per config because
+  a config is not guaranteed to sit deep in a basin.
 - `smooth_gradient` is on by default: on the simulated dataset with ground
   truth it halves the mean translation error (0.039 to 0.022) and matches the
   dissertation's table 4.2. The exact bilinear-patch gradient stays available

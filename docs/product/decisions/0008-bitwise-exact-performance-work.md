@@ -4,7 +4,7 @@ title: Performance work is bitwise-exact or ensemble-certified
 type: architecture
 owner: Robin Jehn
 created: 2026-09-13
-updated: 2026-09-14
+updated: 2026-09-15
 requirements:
 - ../PRD.md
 ---
@@ -39,7 +39,7 @@ Unit tests assert bitwise equality of ParallelSimplicialLdlt against Eigen's Sim
 
 Reordering-tier results:
 
-- CHOLMOD supernodal LLT (`solver.linear_solver: cholmod`) is CERTIFIED on the anchored reference (2026-09-14): lap-1 ensemble 8/8 at 0.011 with spread 0.000; three lambda-jittered full runs at ICP-relations median 0.053-0.055 m (reference band 0.052-0.062), means 0.115-0.129, healthy maps. Stage 1 drops from ~34 to ~17-18 min and the warm 200x200 polish from ~2 min to ~60 s (jitter-stable to the last digit, median 0.053). Config: `configs/intel_smooth_gradient_150_cholmod.yaml`. The 2026-09-13 rejection (0.782 m) measured a boundary-sitting config; deep in the anchored basin the reordering is harmless.
+- CHOLMOD supernodal LLT (`solver.linear_solver: cholmod`) is CERTIFIED on the anchored reference (2026-09-14): lap-1 ensemble 8/8 at 0.011 with spread 0.000; three lambda-jittered full runs at ICP-relations median 0.053-0.055 m (reference band 0.052-0.062), means 0.115-0.129, healthy maps. Stage 1 drops from ~34 to ~17-18 min and the warm 200x200 polish from ~2 min to ~60 s (jitter-stable to the last digit, median 0.053). CHOLMOD is the reference solver since 2026-09-15 (`configs/intel_smooth_gradient_150.yaml`, `configs/intel_polish_200.yaml`); it also matches the original dissertation repo's solver. The 2026-09-13 rejection (0.782 m) measured a boundary-sitting config; deep in the anchored basin the reordering is harmless.
 - Trunk-parallel LDLT factorization: open candidate; less urgent now that CHOLMOD removes the serial-trunk bottleneck.
 
 ## Consequences
@@ -52,5 +52,5 @@ Reordering-tier results:
 
 - Bitwise-exactness as the only admissible standard (was the decision 2026-09-13, relaxed 2026-09-14): safe but caps the reference-config speedup at ~5 % because the LDLT trunk stays serial; the DEC-0009 gate now certifies reorderings statistically.
 - Metric-equivalent tolerance for perf changes (rejected): no numeric tolerance exists between "bitwise" and "broken" near a basin boundary; single-run comparisons cannot certify a reordering. The reordering tier replaces the tolerance with an ensemble gate.
-- CHOLMOD supernodal LLT as the default (tried, rejected 2026-09-13 on the old flagship config; reopened 2026-09-14 as a reordering-tier candidate): 1.8x faster on lap-1; the 0.782 m collapse came from a config the gate later classified as boundary-sitting.
+- CHOLMOD supernodal LLT as the default (tried, rejected 2026-09-13 on the old flagship config; certified and adopted 2026-09-15): the 0.782 m collapse came from a config the gate later classified as boundary-sitting.
 - Per-increment problem caching (rejected as primary lever): the Problem constructor is only ~3 % of runtime; the pre-profiling hypothesis that per-increment rebuilds dominate was wrong.
