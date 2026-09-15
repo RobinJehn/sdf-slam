@@ -154,10 +154,24 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   the post-last-revisit tail) while gap-1 relative deviation stays
   ~0.02 m. Run-to-run spread lives in this soft mode. This is inherent:
   absolute stiffness at frame j is the series stiffness of the chain
-  from the anchor, and no metric in use scores absolute pose. Loop
-  closures help because they stiffen the mode's differential component
-  — the mechanism behind the tail-variance collapse. Do not upweight
-  frame 0 or fix extra frames; that injects artificial stress.
+  from the anchor, and no metric in use scores absolute pose. Do not
+  upweight frame 0 or fix extra frames; that injects artificial stress.
+- Gauge decomposition of the run-to-run spread (2026-09-15, pairwise
+  over the three plain and three closure jittered reference runs): a
+  single best-fit global SE(2) transform removes almost none of the
+  deviation (internal RMS is close to raw RMS in every pair), so the
+  soft mode is differential, not a rigid lean. Loop closures stiffen
+  the differential component only where relation pairs exist: inside
+  the covered frames 14-681, the inter-run gap-200 relative deviation
+  drops from 0.65 m mean / 1.57 m p95 (plain) to 0.44 / 1.12 (closures).
+  The ICP relation set has zero pairs past frame 681, and the uncovered
+  tail dominates the total spread; with closures that tail is no
+  stiffer (gap-200 deviation 4.3 m plain vs 9.4 m closures in this
+  three-run sample). Rule: closure stiffening is local to pair
+  coverage — cover the whole trajectory with pairs, or expect the
+  uncovered tail to keep the soft-mode spread. This also reconciles
+  the held-out tail-variance collapse (held-out pairs live inside the
+  covered region) with the large absolute run-to-run deviation.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
