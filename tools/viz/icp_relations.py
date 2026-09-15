@@ -154,6 +154,18 @@ def select_pairs(
     return selected
 
 
+def residual_weights(residuals: np.ndarray, cap: float = 4.0) -> np.ndarray:
+    """Squared-convention weight per relation from its ICP median residual.
+
+    The information of a point-to-line fit scales with 1/sigma^2, so a
+    relation with half the residual carries four times the weight. Weights
+    normalize to 1 at the median residual and clamp to [1/cap, cap] so a
+    single near-zero residual cannot dominate the solve."""
+    sigma = np.maximum(np.asarray(residuals, dtype=float), 1e-6)
+    weights = (np.median(sigma) / sigma) ** 2
+    return np.clip(weights, 1.0 / cap, cap)
+
+
 def pose_error(reference: np.ndarray, estimate: np.ndarray) -> tuple[float, float]:
     """Translational and rotational error between two relative poses."""
     delta = np.linalg.inv(pose_matrix(reference)) @ pose_matrix(estimate)
@@ -193,12 +205,16 @@ def build(args: argparse.Namespace) -> None:
             continue
         rows.append((i, j, pose[0], pose[1], pose[2], residual, inliers))
 
+    weights = np.ones(len(rows))
+    if args.weighted and rows:
+        weights = residual_weights(np.array([row[5] for row in rows]))
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as f:
-        f.write("i,j,dx,dy,dtheta,residual,inliers\n")
-        for row in rows:
+        f.write("i,j,dx,dy,dtheta,residual,inliers,weight\n")
+        for row, weight in zip(rows, weights):
             f.write(f"{row[0]},{row[1]},{row[2]:.9f},{row[3]:.9f},{row[4]:.9f},"
-                    f"{row[5]:.4f},{row[6]}\n")
+                    f"{row[5]:.4f},{row[6]},{weight:.4f}\n")
     print(f"kept {len(rows)}, dropped {dropped} -> {args.out}")
 
 
@@ -250,6 +266,9 @@ def main() -> None:
                          "such moves are basin escapes, not refinements")
     p_build.add_argument("--max-seed-rotation", type=float, default=20.0,
                          help="drop pairs where ICP rotates this far (deg) from the seed")
+    p_build.add_argument("--weighted", action="store_true",
+                         help="weight each relation by 1/residual^2 (normalized to the "
+                         "median, clamped) instead of a uniform 1.0")
     p_build.set_defaults(func=build)
 
     p_score = sub.add_parser("score", help="score runs against stored relations")

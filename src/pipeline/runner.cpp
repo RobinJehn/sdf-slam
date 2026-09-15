@@ -15,10 +15,6 @@
 
 namespace sdf_slam {
 
-namespace {
-
-/// Parses a relations CSV (header line, then i,j,dx,dy,dtheta[,...]) into
-/// relation measurements. Trailing columns (residual, inliers) are ignored.
 std::vector<RelationMeasurement> LoadRelations(const std::filesystem::path& path) {
   std::ifstream file(path);
   if (!file.is_open()) {
@@ -35,11 +31,22 @@ std::vector<RelationMeasurement> LoadRelations(const std::filesystem::path& path
     double dtheta = 0.0;
     if (stream >> rel.frame_i >> rel.frame_j >> dx >> dy >> dtheta) {
       rel.measurement = {dx, dy, dtheta};
+      double trailing = 0.0;
+      stream >> trailing >> trailing;  // residual and inliers, ignored
+      double weight = 1.0;
+      if (stream >> weight) {
+        if (weight <= 0.0) {
+          throw std::runtime_error("relation weight must be positive in " + path.string());
+        }
+        rel.sqrt_weight = std::sqrt(weight);
+      }
       relations.push_back(rel);
     }
   }
   return relations;
 }
+
+namespace {
 
 std::vector<Pose2> RelativeOdometry(const std::vector<Pose2>& poses) {
   std::vector<Pose2> odometry;

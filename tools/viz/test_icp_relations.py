@@ -9,6 +9,7 @@ from icp_relations import (
     pose_error,
     pose_matrix,
     relative_pose,
+    residual_weights,
     rigid_fit,
     select_pairs,
     target_normals,
@@ -125,6 +126,24 @@ def test_select_pairs_max_gap_excludes_older_frames():
     assert pairs
     assert all(3 <= j - i <= 4 for i, j in pairs)
     assert (5, 9) in pairs and (6, 9) in pairs
+
+
+def test_residual_weights_scale_inverse_squared_and_clamp():
+    residuals = np.array([0.05, 0.10, 0.20, 0.001, 10.0])
+    weights = residual_weights(residuals, cap=4.0)
+    assert weights[1] == pytest.approx(1.0)
+    assert weights[0] == pytest.approx(4.0)
+    assert weights[2] == pytest.approx(0.25)
+    assert weights[3] == pytest.approx(4.0)
+    assert weights[4] == pytest.approx(0.25)
+
+
+def test_residual_weights_median_pair_gets_weight_one():
+    residuals = np.array([0.04, 0.08, 0.16])
+    weights = residual_weights(residuals, cap=100.0)
+    assert weights[1] == pytest.approx(1.0)
+    assert weights[0] == pytest.approx(4.0)
+    assert weights[2] == pytest.approx(0.25)
 
 
 def test_select_pairs_band_respects_per_frame_and_radius():

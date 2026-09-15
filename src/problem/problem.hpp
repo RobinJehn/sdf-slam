@@ -50,11 +50,14 @@ struct OdomSpec {
 };
 
 /// A measured relative pose between two frames, fed to the problem as an
-/// extra residual (e.g. from ICP on a revisit pair).
+/// extra residual (e.g. from ICP on a revisit pair). `sqrt_weight` scales
+/// this relation's residual on top of the global relation weight, so
+/// per-relation confidence (e.g. from the ICP residual) can enter the fit.
 struct RelationMeasurement {
   int frame_i{0};
   int frame_j{0};
   Pose2 measurement;
+  double sqrt_weight{1.0};
 };
 
 struct ProblemOptions {

@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <vector>
 
+#include "pipeline/runner.hpp"
 #include "problem/problem.hpp"
 #include "solvers/solver.hpp"
 
@@ -119,6 +122,34 @@ TEST(EndToEnd, RelationBeyondFrameCountIsSkipped) {
                   relations);
   // Only the consecutive odometry residual remains.
   EXPECT_EQ(problem.odom_specs().size(), 1U);
+}
+
+TEST(EndToEnd, RelationWeightScalesTheResidualSpec) {
+  const E2eSetup setup = MakeSetup();
+  std::vector<RelationMeasurement> relations = {{0, 1, setup.odometry[0]}};
+  relations[0].sqrt_weight = 2.0;
+  const ProblemOptions options = MakeProblemOptions();
+  Problem problem(MakeE2eMap(), setup.poses_init, setup.scans, {}, options, relations);
+  ASSERT_EQ(problem.odom_specs().size(), 1U);
+  EXPECT_DOUBLE_EQ(problem.odom_specs()[0].sqrt_weight, std::sqrt(options.weights.relation) * 2.0);
+}
+
+TEST(EndToEnd, LoadRelationsReadsTheOptionalWeightColumn) {
+  const std::filesystem::path path =
+      std::filesystem::temp_directory_path() / "sdf_slam_relations_weighted.csv";
+  {
+    std::ofstream out(path);
+    out << "i,j,dx,dy,dtheta,residual,inliers,weight\n";
+    out << "0,5,1.0,0.5,0.1,0.05,120,4.0\n";
+    out << "1,6,0.9,0.4,0.2,0.08,90\n";
+    out << "2,7,0.8,0.3,0.3\n";
+  }
+  const std::vector<RelationMeasurement> relations = LoadRelations(path);
+  std::filesystem::remove(path);
+  ASSERT_EQ(relations.size(), 3U);
+  EXPECT_DOUBLE_EQ(relations[0].sqrt_weight, 2.0);
+  EXPECT_DOUBLE_EQ(relations[1].sqrt_weight, 1.0);
+  EXPECT_DOUBLE_EQ(relations[2].sqrt_weight, 1.0);
 }
 
 TEST(EndToEnd, CeresSolverRecoversPerturbedPose) {

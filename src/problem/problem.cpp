@@ -109,7 +109,7 @@ Problem::Problem(GridMap map, std::vector<Pose2> poses, const std::vector<Scan>&
       throw std::invalid_argument("relation frames must satisfy 0 <= i < j");
     }
     if (rel.frame_j < frames) {
-      odom_specs_.push_back({rel.frame_i, rel.frame_j, rel.measurement, sqrt_wr});
+      odom_specs_.push_back({rel.frame_i, rel.frame_j, rel.measurement, sqrt_wr * rel.sqrt_weight});
     }
   }
 }
