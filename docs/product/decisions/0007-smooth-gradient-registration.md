@@ -146,6 +146,13 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   remaining variation reflects scene geometry, not relation quality.
   Recommended pipeline stays: reference, optional loop-closure pass
   with uniform weights, warm polish.
+- The full three-stage chain is certified end to end (2026-09-16, three
+  jittered chains: reference run, closure rerun on its relations, warm
+  200x200 polish from the closure trajectory): frozen benchmark median
+  0.050-0.053 m with tail mean 0.110-0.116, held-out median 0.055-0.056
+  with tail mean 0.108-0.113, healthy maps. The closure pass's
+  tail-variance collapse survives the polish. Total runtime ~37 min
+  with CHOLMOD (18 + 18 + 1).
 - The anchor is exact but soft at range (2026-09-15, measured across
   jittered reference runs): frame 0 is hard-fixed, yet a near-global
   twist of {map, poses 1..N} costs only frame 0's scan residuals, so
