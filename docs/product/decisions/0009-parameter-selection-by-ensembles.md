@@ -91,6 +91,18 @@ supply good candidates; only the ensemble certifies them.
   lambda_factor 0.95 diverges 5/6 and iterations x2 changes nothing; on
   another, lambda_factor 0.95 heals to 6/6 while iterations x2 turns
   uniformly bad. Knobs relocate basins; they do not widen them.
+- Loop closures do not widen parameter windows either (2026-09-16, three
+  jittered full-Intel runs per config, constrain/holdout split): at
+  `weights.odometry: 0.5` (plain: diverges) the closure pass leaves 2/3
+  diverged at 3.9-4.2 m with 1/3 clean at 0.113 — it shifts the basin
+  boundary, it does not move the window edge past 0.5. At 200x200 with
+  area-scaled eikonal 0.01 (plain: degrades to 0.095) closures diverge
+  3/3 at 4.6-5.3 m with collapsed maps — the relation set, built from
+  the healthy reference geometry, fights the degraded equilibrium and
+  destabilizes it. Structural stabilizers collapse variance INSIDE the
+  good basin (their certified role); at window edges they behave like
+  solver knobs: relocate or shrink, never widen. Parameter windows are
+  stabilizer-independent — respect the anchored rules.
 
 - End-to-end demo on simu_76_noise as a fresh environment (2026-09-14):
   the anchored config (h=0.5, eikonal 0.0349, recipe values, incremental)
