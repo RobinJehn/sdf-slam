@@ -4,7 +4,7 @@ title: Performance work is bitwise-exact or ensemble-certified
 type: architecture
 owner: Robin Jehn
 created: 2026-09-13
-updated: 2026-09-15
+updated: 2026-09-16
 requirements:
 - ../PRD.md
 ---
@@ -23,7 +23,7 @@ A rounding change is therefore a basin redraw, not a small accuracy loss: no num
 
 Performance work on the recipe path follows a two-tier policy (revised 2026-09-14):
 
-1. **Refactor tier.** A change that claims "same computation, faster" must reproduce the reference artifacts bit for bit (poses_estimated.csv and map.txt on the lap-1 testbed, then on a full reference run). The bitwise diff is the complete and cheap verification; no ensemble is needed.
+1. **Refactor tier.** A change that claims "same computation, faster" must reproduce the reference artifacts bit for bit (poses_estimated.csv and map.txt on the lap-1 testbed, then on a full reference run). The bitwise diff is the complete and cheap verification; no ensemble is needed. Run bitwise checks on the Eigen-LDLT path (the `linear_solver` default): the CHOLMOD path cannot reproduce itself (see Consequences), so it cannot anchor a bitwise comparison.
 2. **Reordering tier.** A change that reorders floating-point arithmetic (different linear solver, parallel reductions, changed contraction) is admissible when the new binary re-passes the full DEC-0009 gate on each production config: an 8-jitter lap-1 ensemble with 8/8 convergence and near-zero spread, then at least 3 lambda-jittered full runs scored on the frozen ICP relations and the rendered map, with the median inside the reference band (0.052-0.062 m stage-1). Certification binds to the (binary, config) pair: a new production config or a further reordering change repeats the gate.
 
 Blanket numeric tolerances stay forbidden: the gate is statistical, never "the metric moved by less than X on one run".
@@ -44,6 +44,7 @@ Reordering-tier results:
 
 ## Consequences
 
+- The CHOLMOD path is nondeterministic per invocation (measured 2026-09-16: identical binary and config produce trajectories that differ from frame 1; absolute poses differ up to 13 m through the soft anchor mode while held-out relation scores stay in band, means 0.106-0.111 over five draws). The threaded BLAS inside the supernodal factorization reorders reductions between runs. Every reference run is therefore an independent basin draw even without a lambda jitter; report reference results only as ensemble statistics, and never expect a rerun to reproduce a CSV.
 - The recipe's headline numbers are knife-edge samples, not robust properties. Any dissertation-comparison claim needs this caveat; a different compiler, BLAS, or machine will produce different metrics from the same config unless the config passes the gate there too.
 - A reordering-tier change costs a gate run per production config (~20 min lap-1 ensemble plus ~2 h of jittered full runs). Prefer refactor-tier wins for quick iterations.
 - Symbolic-analysis reuse in the LDLT is near-useless here (the J^T J pattern changes in ~99 % of iterations because points cross cells), so the win comes from parallelizing the numeric factorization, not from caching the analysis.
