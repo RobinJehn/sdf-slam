@@ -132,8 +132,14 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   mean 0.110-0.111 while closures plus the dense web score 0.116-0.123
   with wider medians (0.057-0.065), a distorted map in the worst run,
   and ~2.9x runtime. Short-gap relations add correlated scan-match
-  noise that fights the closures. Recommended pipeline stays: reference,
-  optional loop-closure pass, warm polish.
+  noise that fights the closures. Second-generation closures also fail
+  (2026-09-15, three jittered runs): relations rebuilt from the
+  closure-improved estimate pass the guards at 212 pairs (vs 95), but
+  the held-out mean degrades to 0.112-0.121 and the medians spread —
+  the marginal new pairs correlate with the estimate that admitted
+  them, and the denser long-range coupling costs ~3.8x runtime. Build
+  relations once, from the plain reference estimate. Recommended
+  pipeline stays: reference, optional loop-closure pass, warm polish.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
