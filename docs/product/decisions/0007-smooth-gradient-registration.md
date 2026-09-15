@@ -138,8 +138,14 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   the held-out mean degrades to 0.112-0.121 and the medians spread —
   the marginal new pairs correlate with the estimate that admitted
   them, and the denser long-range coupling costs ~3.8x runtime. Build
-  relations once, from the plain reference estimate. Recommended
-  pipeline stays: reference, optional loop-closure pass, warm polish.
+  relations once, from the plain reference estimate. Per-relation
+  residual weighting (G-ICP style, optional weight column in the CSV,
+  `icp_relations.py build --weighted`) also loses to uniform weights
+  (held-out mean 0.112-0.124 vs 0.110-0.111, three jittered runs each):
+  the guards already truncate the residual distribution, so the
+  remaining variation reflects scene geometry, not relation quality.
+  Recommended pipeline stays: reference, optional loop-closure pass
+  with uniform weights, warm polish.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
