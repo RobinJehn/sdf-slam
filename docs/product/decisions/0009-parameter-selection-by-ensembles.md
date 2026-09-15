@@ -4,7 +4,7 @@ title: Choose parameters by anchored rules plus stability ensembles
 type: process
 owner: Robin Jehn
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-15
 requirements:
 - ../PRD.md
 ---
@@ -97,6 +97,22 @@ supply good candidates; only the ensemble certifies them.
   passes the gate 6/6 with zero spread and beats the tuned sweep runs on
   ground-truth relative errors (rel. translation 0.0029 vs 0.0043-0.0079)
   without any per-dataset tuning.
+- Noise-ladder onboarding (2026-09-15, simu_76_{more,very,extreme}_noise;
+  scans identical across rungs, only the odometry input gets noisier):
+  the same anchored config transfers unchanged to more_noise (gate 8/8
+  spread 0.000, GT rel. translation 0.0030 vs the 0.0029 baseline, clean
+  map). very_noise and extreme_noise degrade deterministically (8/8 zero
+  spread each; GT rel. translation 0.0504 / 0.0888; the map draws the
+  outer wall twice at a rotation offset). The recipe breaks by degrading,
+  not by flipping: incremental chaining on simu stays deterministic, and
+  the failure is a double-wall local minimum that the bad odometry init
+  selects — once revisit scans draw the second wall, approaching the true
+  alignment costs scan residuals against the wrong zero-crossing.
+  Consequence for the gate: zero spread does not certify a new dataset.
+  Spread measures stability, not accuracy — a deterministic wrong minimum
+  passes 8/8. Compare the gate median against a plausible baseline
+  (0.526 here vs 3.522 / 2.166 on the broken rungs) or validate against
+  ground truth and the rendered map.
 
 ## Consequences
 
