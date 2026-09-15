@@ -146,6 +146,18 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   remaining variation reflects scene geometry, not relation quality.
   Recommended pipeline stays: reference, optional loop-closure pass
   with uniform weights, warm polish.
+- The anchor is exact but soft at range (2026-09-15, measured across
+  jittered reference runs): frame 0 is hard-fixed, yet a near-global
+  twist of {map, poses 1..N} costs only frame 0's scan residuals, so
+  absolute pose deviation between runs grows with distance from the
+  anchor (0.2-0.5 m near frame 0, 1-2 m at frames 600-900, 5-10 m on
+  the post-last-revisit tail) while gap-1 relative deviation stays
+  ~0.02 m. Run-to-run spread lives in this soft mode. This is inherent:
+  absolute stiffness at frame j is the series stiffness of the chain
+  from the anchor, and no metric in use scores absolute pose. Loop
+  closures help because they stiffen the mode's differential component
+  — the mechanism behind the tail-variance collapse. Do not upweight
+  frame 0 or fix extra frames; that injects artificial stress.
 
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
