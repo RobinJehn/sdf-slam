@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include "core/map_init.hpp"
 
@@ -18,21 +20,21 @@ Scan WallAtX2() {
 
 TEST(MapInit, NodeOnTheSurfaceGetsZero) {
   GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
-  InitializeFromScans(map, {WallAtX2()}, {Pose2{}});
+  InitializeFromScans(map, {WallAtX2()}, {Pose2{}}, /*signed_distance=*/true);
   // node at x = 2.0, y = 0.0 sits on the wall
   EXPECT_NEAR(map.Value(5, 5), 0.0, 1e-9);
 }
 
 TEST(MapInit, SensorSideIsPositiveAndDistanceIsCorrect) {
   GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
-  InitializeFromScans(map, {WallAtX2()}, {Pose2{}});
+  InitializeFromScans(map, {WallAtX2()}, {Pose2{}}, /*signed_distance=*/true);
   // node at x = 1.2 lies 0.8 m in front of the wall, on the sensor side
   EXPECT_NEAR(map.Value(3, 5), 0.8, 1e-9);
 }
 
 TEST(MapInit, BehindTheSurfaceIsNegative) {
   GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
-  InitializeFromScans(map, {WallAtX2()}, {Pose2{}});
+  InitializeFromScans(map, {WallAtX2()}, {Pose2{}}, /*signed_distance=*/true);
   // node at x = 2.8 lies 0.8 m behind the wall, away from the sensor
   EXPECT_NEAR(map.Value(7, 5), -0.8, 1e-9);
 }
@@ -40,7 +42,7 @@ TEST(MapInit, BehindTheSurfaceIsNegative) {
 TEST(MapInit, UsesThePoseToPlaceScanPoints) {
   GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
   // shifting the sensor +1 in x moves the wall to x = 3
-  InitializeFromScans(map, {WallAtX2()}, {Pose2{1.0, 0.0, 0.0}});
+  InitializeFromScans(map, {WallAtX2()}, {Pose2{1.0, 0.0, 0.0}}, /*signed_distance=*/true);
   EXPECT_NEAR(map.Value(7, 5), 0.2, 1e-9);   // x = 2.8, in front of x = 3
   EXPECT_NEAR(map.Value(9, 5), -0.6, 1e-9);  // x = 3.6, behind it
 }
@@ -48,13 +50,43 @@ TEST(MapInit, UsesThePoseToPlaceScanPoints) {
 TEST(MapInit, TakesTheNearestSurfaceAcrossScans) {
   GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
   // a second wall at x = 3 is nearer to the node at x = 2.8 than the one at x = 2
-  InitializeFromScans(map, {WallAtX2(), WallAtX2()}, {Pose2{}, Pose2{1.0, 0.0, 0.0}});
+  InitializeFromScans(map, {WallAtX2(), WallAtX2()}, {Pose2{}, Pose2{1.0, 0.0, 0.0}},
+                      /*signed_distance=*/true);
   EXPECT_NEAR(std::abs(map.Value(7, 5)), 0.2, 1e-9);
+}
+
+TEST(MapInit, UnsignedKeepsBothSidesPositive) {
+  GridMap map(11, 11, {0.0, -2.0}, {4.0, 2.0});
+  InitializeFromScans(map, {WallAtX2()}, {Pose2{}}, /*signed_distance=*/false);
+  EXPECT_NEAR(map.Value(3, 5), 0.8, 1e-9);  // 0.8 m in front of the wall
+  EXPECT_NEAR(map.Value(7, 5), 0.8, 1e-9);  // 0.8 m behind it, still positive
+}
+
+TEST(MapInit, UnsignedHasNoSignSeam) {
+  // Two walls with a gap between them: the signed field flips sign where the
+  // nearest surface changes, the unsigned field stays continuous.
+  GridMap signed_map(21, 21, {0.0, -2.0}, {4.0, 2.0});
+  GridMap unsigned_map(21, 21, {0.0, -2.0}, {4.0, 2.0});
+  const std::vector<Scan> scans{WallAtX2(), WallAtX2()};
+  const std::vector<Pose2> poses{Pose2{}, Pose2{2.0, 0.0, 0.0}};
+  InitializeFromScans(signed_map, scans, poses, true);
+  InitializeFromScans(unsigned_map, scans, poses, false);
+
+  auto max_jump = [](const GridMap& m) {
+    double worst = 0.0;
+    for (int h = 0; h < m.ny(); ++h) {
+      for (int w = 0; w + 1 < m.nx(); ++w) {
+        worst = std::max(worst, std::abs(m.Value(w + 1, h) - m.Value(w, h)));
+      }
+    }
+    return worst;
+  };
+  EXPECT_GT(max_jump(signed_map), max_jump(unsigned_map));
 }
 
 TEST(MapInit, EmptyScansLeaveTheMapUntouched) {
   GridMap map(5, 5, {0.0, 0.0}, {1.0, 1.0}, 0.25);
-  InitializeFromScans(map, {}, {});
+  InitializeFromScans(map, {}, {}, true);
   EXPECT_EQ(map.Value(2, 2), 0.25);
 }
 

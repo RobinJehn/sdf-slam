@@ -217,7 +217,7 @@ SolveResult Run(const RunConfig& config) {
       }
     }
     if (config.map.init_from_scans) {
-      InitializeFromScans(map, dataset.scans, initial);
+      InitializeFromScans(map, dataset.scans, initial, config.map.init_signed);
     }
     Problem problem(std::move(map), initial, dataset.scans, odometry, config.problem, relations);
     total = Solve(problem, config.solver);
@@ -229,7 +229,7 @@ SolveResult Run(const RunConfig& config) {
     // added so far.
     estimated = {dataset.poses[0]};
     if (config.map.init_from_scans) {
-      InitializeFromScans(map, {dataset.scans[0]}, {dataset.poses[0]});
+      InitializeFromScans(map, {dataset.scans[0]}, {dataset.poses[0]}, config.map.init_signed);
     }
     SolverOptions step_options = config.solver;
     step_options.max_iterations = config.iterations_per_increment;

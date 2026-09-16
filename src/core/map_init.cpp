@@ -29,7 +29,7 @@ using KdTree =
 }  // namespace
 
 void InitializeFromScans(GridMap& map, const std::vector<Scan>& scans,
-                         const std::vector<Pose2>& poses) {
+                         const std::vector<Pose2>& poses, bool signed_distance) {
   std::vector<Eigen::Vector2d> points;
   std::vector<Eigen::Vector2d> origins;
   for (size_t i = 0; i < scans.size() && i < poses.size(); ++i) {
@@ -56,10 +56,13 @@ void InitializeFromScans(GridMap& map, const std::vector<Scan>& scans,
       result.init(&index, &squared);
       tree.findNeighbors(result, query.data());
 
-      // Positive between the sensor and its surface point, negative behind it.
-      const double to_node = (node - origins[index]).norm();
-      const double to_surface = (points[index] - origins[index]).norm();
-      const double sign = to_node <= to_surface ? 1.0 : -1.0;
+      double sign = 1.0;
+      if (signed_distance) {
+        // Positive between the sensor and its surface point, negative behind.
+        const double to_node = (node - origins[index]).norm();
+        const double to_surface = (points[index] - origins[index]).norm();
+        sign = to_node <= to_surface ? 1.0 : -1.0;
+      }
       map.Value(w, h) = sign * std::sqrt(squared);
     }
   }

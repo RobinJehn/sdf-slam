@@ -26,6 +26,10 @@ struct MapConfig {
   /// starting poses; incremental runs seed from frame 0 only, so the map
   /// never carries knowledge of scans the run has not reached yet.
   bool init_from_scans{false};
+  /// Seed a signed field. The projective sign jumps where an occluded region
+  /// meets free space; an unsigned seed avoids that at the cost of never
+  /// going negative behind surfaces.
+  bool init_signed{true};
 };
 
 struct RunConfig {
