@@ -180,6 +180,38 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   the held-out tail-variance collapse (held-out pairs live inside the
   covered region) with the large absolute run-to-run deviation.
 
+- The converged map is not a distance field, and the objective prefers it
+  that way (2026-09-16, simu batch runs). `map.init_from_scans` seeds every
+  node with the signed distance to the nearest scan point instead of a
+  constant. Against the constant-0 default it cuts whole-domain field error
+  from 3.85-3.90 m to 0.86-2.15 m and lifts mean |grad map| from 0.22-0.34
+  to 1.03-1.25, where a true signed distance field holds |grad| = 1. The
+  default therefore converges to a nearly flat sheet with faint wall
+  imprints. Yet every seeded run ends at a HIGHER final cost (1445 vs 1167
+  on simu_76_noise), so the residual set genuinely scores the flat map
+  better: at weight 0.0349 the eikonal term cannot hold |grad| = 1 against
+  scan and hallucination, and flattening is the cheaper way to cut cost.
+  Read cost as a solver diagnostic, never as map quality.
+- A constant-0 map makes the starting pose gradient exactly zero
+  (2026-09-16). At u = 0 the scan residual vanishes for any pose, the
+  hallucination residual equals its asserted offset, the eikonal is
+  pose-free, and a batch run's odometry residual is zero because the
+  initial poses are the odometry. Four simu datasets whose odometry differs
+  by up to 2.7 m all report the same initial cost, 12960.2. Poses cannot
+  move until the map builds structure. Seeding from scans removes the dead
+  start: initial cost then varies by dataset (11148-12915).
+- Seed the map only where scans have been observed. Batch runs seed from
+  the whole dataset and gain map quality at roughly unchanged pose accuracy
+  (GT relative translation 0.0069 to 0.0063, 0.0922 to 0.0744, 0.1384 to
+  0.1312, but 0.1310 to 0.2366 on simu_76_extreme_noise). An incremental
+  run may only seed from frame 0, and that loses badly: 0.0029 to 0.0806 on
+  simu_76_noise and 0.0504 to 0.1725 on simu_76_very_noise. One scan sees a
+  fraction of the scene, so its distance field states confident wrong values
+  everywhere it did not observe, and later scans must climb out of them. A
+  confident partial prior is worse than a neutral one. `init_from_scans`
+  stays off by default; the variant worth testing re-seeds only cells as
+  they are first observed.
+
 - Full-Intel runs optimize the dense state: ~42 min at 100x100 instead of ~16 min with the active region.
 - The pose Jacobian is deliberately inconsistent with the residual's true derivative; finite-difference Jacobian tests cover the default (exact) mode only.
 - DEC-0003's `weighted` normals stay the default for the simulated datasets; the Intel configs override to `pca`.
