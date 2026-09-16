@@ -1,0 +1,38 @@
+# ACES (Austin, CARMEN log from the Freiburg SLAM-evaluation set),
+# converted by tools/viz/carmen_to_pcd.py. Anchored per DEC-0009: cell
+# size 0.5 m on both axes, eikonal 0.04 x (0.5 x 0.5) / 0.5354^2, the
+# DEC-0007 recipe values, CHOLMOD. The domain covers the odometry-frame
+# scan points; ACES beams reach 47 m, so the domain is wider than the
+# walked area. Score against data/aces_relations.csv, the published
+# benchmark relations that ship with the log.
+dataset_dir: data/aces
+output_dir: out/aces_full
+mode: incremental
+increment_size: 1
+iterations_per_increment: 5
+snapshot_every: 0
+active_region: false
+smooth_gradient: true
+map:
+  nx: 175
+  ny: 143
+  auto_domain: false
+  min: [-49.0, -55.0]
+  max: [38.0, 16.0]
+weights:
+  scan: 1.0
+  hallucination: 1.0
+  eikonal: 0.0349
+  odometry: 1.0
+hallucination:
+  points_per_scan_point: 6
+  step_size: 0.1
+normals:
+  method: pca
+  k_neighbors: 7
+solver:
+  backend: lm
+  linear_solver: cholmod
+  lambda_init: 5.0
+  lambda_factor: 0.9
+  step_tolerance: 0.001
