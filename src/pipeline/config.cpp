@@ -119,7 +119,8 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
 
   if (const YAML::Node map = root["map"]) {
     CheckKnownKeys(map,
-                   {"nx", "ny", "min", "max", "auto_domain", "auto_domain_margin", "initial_value"},
+                   {"nx", "ny", "min", "max", "auto_domain", "auto_domain_margin", "initial_value",
+                    "init_from_scans"},
                    "map");
     Assign(map, "nx", config.map.nx);
     Assign(map, "ny", config.map.ny);
@@ -134,6 +135,7 @@ RunConfig LoadConfig(const std::filesystem::path& path) {
     Assign(map, "auto_domain", config.map.auto_domain);
     Assign(map, "auto_domain_margin", config.map.auto_domain_margin);
     Assign(map, "initial_value", config.map.initial_value);
+    Assign(map, "init_from_scans", config.map.init_from_scans);
   }
 
   if (const YAML::Node weights = root["weights"]) {

@@ -21,6 +21,11 @@ struct MapConfig {
   bool auto_domain{false};
   double auto_domain_margin{5.0};
   double initial_value{0.0};
+  /// Seed every node with the signed distance to the nearest scan point
+  /// instead of `initial_value`. Batch runs seed from all scans at their
+  /// starting poses; incremental runs seed from frame 0 only, so the map
+  /// never carries knowledge of scans the run has not reached yet.
+  bool init_from_scans{false};
 };
 
 struct RunConfig {

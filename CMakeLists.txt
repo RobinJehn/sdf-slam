@@ -49,6 +49,7 @@ add_library(sdf_slam_core
   src/core/scan.cpp
   src/core/normals.cpp
   src/core/hallucination.cpp
+  src/core/map_init.cpp
   src/problem/problem.cpp
   src/solvers/lm_solver.cpp
   src/solvers/ceres_solver.cpp
@@ -81,6 +82,7 @@ if(SDF_SLAM_BUILD_TESTS)
     tests/test_pose.cpp
     tests/test_scan_io.cpp
     tests/test_grid_map.cpp
+    tests/test_map_init.cpp
     tests/test_hallucination.cpp
     tests/test_normals.cpp
     tests/test_jacobians.cpp

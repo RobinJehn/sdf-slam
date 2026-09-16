@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "core/map_init.hpp"
 #include "core/scan.hpp"
 #include "problem/problem.hpp"
 #include "solvers/solver.hpp"
@@ -215,6 +216,9 @@ SolveResult Run(const RunConfig& config) {
         throw std::runtime_error("initial_poses count != scan count");
       }
     }
+    if (config.map.init_from_scans) {
+      InitializeFromScans(map, dataset.scans, initial);
+    }
     Problem problem(std::move(map), initial, dataset.scans, odometry, config.problem, relations);
     total = Solve(problem, config.solver);
     estimated = problem.poses();
@@ -224,6 +228,9 @@ SolveResult Run(const RunConfig& config) {
     // composing odometry onto the last optimized pose, then refine everything
     // added so far.
     estimated = {dataset.poses[0]};
+    if (config.map.init_from_scans) {
+      InitializeFromScans(map, {dataset.scans[0]}, {dataset.poses[0]});
+    }
     SolverOptions step_options = config.solver;
     step_options.max_iterations = config.iterations_per_increment;
     total.initial_cost = -1.0;
