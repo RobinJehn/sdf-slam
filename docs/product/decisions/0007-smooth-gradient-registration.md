@@ -200,31 +200,39 @@ The reference runs 5 solver iterations per increment with the CHOLMOD linear sol
   by up to 2.7 m all report the same initial cost, 12960.2. Poses cannot
   move until the map builds structure. Seeding from scans removes the dead
   start: initial cost then varies by dataset (11148-12915).
-- Keep the map signed, but seed it unsigned (2026-09-16). Signed values are
-  what make a surface addressable below cell size: the interpolant between a
-  positive and a negative node crosses zero exactly at the wall, at slope 1,
-  so the scan residual is linear in the pose error. Unsigned node values put
-  both flanking nodes above zero, so the interpolant never reaches zero and
-  the surface can only sit at a node. The registration force then depends on
-  where the wall falls inside the cell: slope 0.8 at a tenth of a cell, 0.5
-  at a quarter, exactly 0 at the midpoint, and negative beyond it. A wall at
-  a cell midpoint is locally unobservable. This is why 0.5 m cells still
-  reach 0.029 m on ACES.
-  Seeding is a separate question, because the hallucination residual (thesis
-  eq. 3.15, delta(x) = -x behind the surface) drives the field negative where
-  the data supports it. A projective seed sign — positive between sensor and
-  surface, negative behind — asserts that every occluded cell is inside
-  matter, which is wrong wherever a region is merely hidden. The field then
-  jumps from a large negative to a large positive value where an occluded
-  region meets free space seen from elsewhere, and no eikonal solution holds
-  such a seam. An unsigned seed supplies the magnitudes without that claim.
-  Batch GT relative translation, constant-0 / signed seed / unsigned seed:
-  simu_76_noise 0.0069 / 0.0063 / 0.0087; more_noise 0.0922 / 0.0744 /
-  0.0910; very_noise 0.1384 / 0.1312 / 0.0762; extreme_noise 0.1310 / 0.2366
-  / 0.0826. The unsigned seed roughly halves the error on the two rungs that
-  fail by the double-wall minimum, and it also beats the signed seed
-  incrementally (0.0440 vs 0.0806 on noise). Single draws only; gate before
-  adopting.
+- Keep the map signed. Signed values are what make a surface addressable
+  below cell size: the interpolant between a positive and a negative node
+  crosses zero exactly at the wall, at slope 1, so the scan residual is
+  linear in the pose error. Unsigned node values put both flanking nodes
+  above zero, so the interpolant never reaches zero and the surface can only
+  sit at a node. The registration force then depends on where the wall falls
+  inside the cell: slope 0.8 at a tenth of a cell, 0.5 at a quarter, exactly
+  0 at the midpoint, and negative beyond it. A wall at a cell midpoint is
+  locally unobservable. This is why 0.5 m cells still reach 0.029 m on ACES.
+- Seeding the map from scans is a dead end as implemented (2026-09-16,
+  `map.init_from_scans`, default off). Results across the full grid:
+  batch on simu, GT relative translation for constant-0 / signed seed /
+  unsigned seed — noise 0.0069 / 0.0063 / 0.0087, more_noise 0.0922 /
+  0.0744 / 0.0910, very_noise 0.1384 / 0.1312 / 0.0762, extreme_noise
+  0.1310 / 0.2366 / 0.0826. Incremental on simu — noise 0.0029 / 0.0806 /
+  0.0440, very_noise 0.0504 / 0.1725 / 0.0572. Incremental on real data,
+  ACES slice against the published relations — 0.022 / 0.043 / 0.047 median;
+  Intel lap-1 revisit consistency — 0.011 / 0.375 / 0.411, with the revisit
+  frame count falling 100 / 69 / 56, so both seeded runs drifted. Batch on
+  real data, ACES slice — 0.024 / 0.023 / 0.025, no difference at all.
+  The one cell that improves is batch on the degraded simu rungs, where a
+  seed built from the whole dataset pulls the solve out of the double-wall
+  minimum. Everywhere else the seed is neutral or harmful. An incremental
+  run may honestly seed only from frame 0, and one scan states confident
+  wrong values everywhere it did not observe; later scans must then climb
+  out of them. A confident partial prior is worse than a neutral one.
+- The projective seed sign is wrong in principle, which is why the signed
+  seed loses to the unsigned one in most cells. It calls every occluded cell
+  inside matter, so the field jumps from a large negative to a large positive
+  value where an occluded region meets free space seen from elsewhere, and no
+  eikonal solution holds such a seam. A sign is only definable where a
+  measurement defines it. That argues for a local sign taken from the surface
+  normal, not a global inside-outside rule.
 - Seed the map only where scans have been observed. Batch runs seed from
   the whole dataset and gain map quality at roughly unchanged pose accuracy
   (GT relative translation 0.0069 to 0.0063, 0.0922 to 0.0744, 0.1384 to
