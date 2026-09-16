@@ -103,6 +103,20 @@ supply good candidates; only the ensemble certifies them.
   good basin (their certified role); at window edges they behave like
   solver knobs: relocate or shrink, never widen. Parameter windows are
   stabilizer-independent — respect the anchored rules.
+- Iterating each increment to convergence makes chaos worse, not better
+  (2026-09-16, lap-1 ensembles, 8 jitters each). The question comes from
+  the double-wall mechanism: once the map draws a second wall at the
+  wrong offset, the barrier between the two zero-crossings lives in map
+  space, so a pose step toward the truth first climbs the SDF. Solving
+  each increment harder does not cross that barrier — it descends deeper
+  into the wrong minimum and commits it before the disambiguating revisit
+  scan arrives. On a flip-prone config (eikonal x2), raising
+  `iterations_per_increment` from 10 to 100 turns 3/8 diverged into 7/8
+  (ensemble median 0.012 -> 0.690). On the anchored config the same change
+  stays 0/8, but the spread grows from 0.000 to 0.008 — extra iterations
+  inject run-to-run variation even inside a good basin. A dynamic
+  scan-admission rule ("advance when the increment stops moving") is the
+  same knob and inherits the same verdict.
 
 - End-to-end demo on simu_76_noise as a fresh environment (2026-09-14):
   the anchored config (h=0.5, eikonal 0.0349, recipe values, incremental)
