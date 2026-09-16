@@ -150,8 +150,15 @@ supply good candidates; only the ensemble certifies them.
   area rule (0.0349). The 200-scan gate slice passed 8/8 with no run
   deviating at the metric's resolution, on the CHOLMOD path where every
   run is an independent draw (DEC-0008), and scored 0.022 m / 0.20 deg
-  median against the log's published benchmark relations. Two transfer
-  notes for the next dataset: ACES beams reach 47 m against Intel's 10 m,
+  median against the log's published benchmark relations. Validation on
+  the full 1824-scan dataset then passed 3/3 (~75 min per run at three in
+  parallel): translation median 0.029/0.029/0.030 m and mean 0.039 m in
+  every run over all 1279 benchmark relations, 0.045-0.046 m median over
+  the 88 pairs that close a loop, and maps that draw the building's four
+  quadrants and central rotunda as single lines. The mean sits only 1.35x
+  above the median, against 2x on Intel, so ACES has no comparable tail —
+  its loop structure revisits the same corridors often enough to keep the
+  soft anchor mode short. Two transfer notes for the next dataset: ACES beams reach 47 m against Intel's 10 m,
   so the domain is far wider than the walked area and most of the grid
   stays unobserved; and the gate slice has no revisits beyond 40 frames,
   so `--min-gap` must follow the slice rather than the Intel default.
