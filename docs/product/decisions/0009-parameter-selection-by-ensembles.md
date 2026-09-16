@@ -134,6 +134,9 @@ supply good candidates; only the ensemble certifies them.
   the failure is a double-wall local minimum that the bad odometry init
   selects — once revisit scans draw the second wall, approaching the true
   alignment costs scan residuals against the wrong zero-crossing.
+  These simu runs use the Eigen-LDLT path, which is reproducible, so the
+  zero spread is determinism rather than evidence of a wide basin; on the
+  CHOLMOD path every run is an independent draw (DEC-0008).
   Consequence for the gate: zero spread does not certify a new dataset.
   Spread measures stability, not accuracy — a deterministic wrong minimum
   passes 8/8. Compare the gate median against a plausible baseline
