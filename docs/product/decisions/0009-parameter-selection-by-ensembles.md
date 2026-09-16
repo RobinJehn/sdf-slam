@@ -142,6 +142,19 @@ supply good candidates; only the ensemble certifies them.
   passes 8/8. Compare the gate median against a plausible baseline
   (0.526 here vs 3.522 / 2.166 on the broken rungs) or validate against
   ground truth and the rendered map.
+- ACES onboarding (2026-09-16), the first dataset from outside the
+  dissertation's own set: a CARMEN log from the Freiburg SLAM-evaluation
+  collection, converted by `tools/viz/carmen_to_pcd.py`. Anchoring needed
+  no judgement — the domain follows the odometry-frame scan points, h =
+  0.5 m on both axes fixes nx and ny, and the eikonal weight follows the
+  area rule (0.0349). The 200-scan gate slice passed 8/8 with no run
+  deviating at the metric's resolution, on the CHOLMOD path where every
+  run is an independent draw (DEC-0008), and scored 0.022 m / 0.20 deg
+  median against the log's published benchmark relations. Two transfer
+  notes for the next dataset: ACES beams reach 47 m against Intel's 10 m,
+  so the domain is far wider than the walked area and most of the grid
+  stays unobserved; and the gate slice has no revisits beyond 40 frames,
+  so `--min-gap` must follow the slice rather than the Intel default.
 
 ## Consequences
 
